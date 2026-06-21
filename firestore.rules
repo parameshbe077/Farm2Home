@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Products (public catalog) ───
+    // Anyone can read products. Writes only via Admin SDK (Express server).
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    // ─── Orders ───
+    // Never allow direct client access. Orders are created by the Express API
+    // using the Firebase Admin SDK (service account), which bypasses these rules.
+    match /orders/{orderId} {
+      allow read, write: if false;
+    }
+
+    // ─── Contact messages ───
+    // Same as orders — server-only via Admin SDK.
+    match /contactMessages/{messageId} {
+      allow read, write: if false;
+    }
+
+    // ─── Block everything else ───
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ─── Future: admin panel with Firebase Auth ───
+    // Uncomment and set custom claim { admin: true } on admin users:
+    //
+    // function isAdmin() {
+    //   return request.auth != null && request.auth.token.admin == true;
+    // }
+    //
+    // match /products/{productId} {
+    //   allow read: if true;
+    //   allow write: if isAdmin();
+    // }
+    // match /orders/{orderId} {
+    //   allow read, update: if isAdmin();
+    //   allow create, delete: if false;
+    // }
+    // match /contactMessages/{messageId} {
+    //   allow read: if isAdmin();
+    //   allow write: if false;
+    // }
+  }
+}
