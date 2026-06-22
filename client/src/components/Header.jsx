@@ -17,20 +17,17 @@ export default function Header() {
 
   return (
     <header className="header">
-      <div className="header__top">
-        <div className="container header__top-inner">
-          <span>Free delivery on orders above ₹500</span>
-          <span className="header__top-divider">|</span>
-          <span>Fresh harvest every morning</span>
-        </div>
-      </div>
+      {menuOpen && (
+        <button type="button" className="nav-backdrop" aria-label="Close menu" onClick={closeMenu} />
+      )}
+
       <div className="container header__inner">
         <Link to="/" className="logo" onClick={closeMenu}>
           <span className="logo__icon">🌾</span>
           <span className="logo__text">Farm2Home</span>
         </Link>
 
-        <nav className={`nav ${menuOpen ? 'open' : ''}`}>
+        <nav className={`nav ${menuOpen ? 'open' : ''}`} aria-hidden={!menuOpen}>
           <NavLink to="/" className="nav__link" end onClick={closeMenu}>Home</NavLink>
           <NavLink to="/products" className="nav__link" onClick={closeMenu}>Products</NavLink>
           <NavLink to="/about" className="nav__link" onClick={closeMenu}>About</NavLink>
@@ -69,6 +66,7 @@ export default function Header() {
             className="menu-toggle"
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Toggle menu"
+            aria-expanded={menuOpen}
           >
             <span /><span /><span />
           </button>

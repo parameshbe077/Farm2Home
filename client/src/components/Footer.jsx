@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 export default function Footer() {
   return (
     <footer className="footer">
+      <div className="footer__promo">
+        <div className="container footer__promo-inner">
+          <span>Free delivery on orders above ₹500</span>
+          <span className="footer__promo-divider">|</span>
+          <span>Fresh harvest every morning</span>
+        </div>
+      </div>
       <div className="container footer__inner">
         <div className="footer__grid">
           <div className="footer__brand">
