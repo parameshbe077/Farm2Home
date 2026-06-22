@@ -119,6 +119,8 @@ function toPublicOrder(order) {
       address: order.customer?.address,
       area: order.customer?.area,
       pincode: order.customer?.pincode,
+      lat: order.customer?.lat ?? null,
+      lng: order.customer?.lng ?? null,
     },
   };
 }

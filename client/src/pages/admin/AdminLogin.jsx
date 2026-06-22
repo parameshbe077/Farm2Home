@@ -22,11 +22,27 @@ export default function AdminLogin() {
     setError('');
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (err) {
-      setError(err.code === 'auth/invalid-credential'
-        ? 'Invalid email or password'
-        : 'Login failed. Try again.');
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        setError('Invalid email or password. Check Firebase Authentication → Users.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setError('Email/password sign-in is disabled. Enable it in Firebase Console → Authentication.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Wait a few minutes and try again.');
+      } else if (code === 'auth/network-request-failed') {
+        setError('Network error. Check your connection and that the dev server is running.');
+      } else if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key') {
+        setError('Firebase API key rejected. Add this site to Google Cloud key restrictions (see below).');
+      } else {
+        setError(
+          code
+            ? `Login failed (${code.replace('auth/', '')}). See ADMIN_SETUP.md`
+            : 'Login failed. Try again.',
+        );
+      }
+      console.error('Admin login error:', code, err?.message);
     } finally {
       setSubmitting(false);
     }

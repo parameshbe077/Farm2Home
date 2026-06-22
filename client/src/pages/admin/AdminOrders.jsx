@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { fetchAdminOrders, updateOrderStatus } from '../../api/adminApi';
+import DeliveryTrackingMap from '../../components/maps/DeliveryTrackingMap';
 import { formatPrice } from '../../utils/formatPrice';
 
 const STATUSES = ['pending', 'confirmed', 'delivered', 'cancelled'];
@@ -96,6 +97,7 @@ export default function AdminOrders() {
                   📍 {[order.customer.address, order.customer.area, order.customer.pincode].filter(Boolean).join(', ')}
                 </p>
               )}
+              <DeliveryTrackingMap customer={order.customer} status={order.status} height={180} />
               <ul className="admin-order-card__items">
                 {order.items?.map((item) => (
                   <li key={item.id}>

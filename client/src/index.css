@@ -1560,6 +1560,7 @@ main { flex: 1; }
 }
 
 .cart-drawer__footer {
+  flex-shrink: 0;
   padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--gray-200);
   background: var(--gray-100);
@@ -1698,6 +1699,183 @@ main { flex: 1; }
   .values-grid { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr 1fr; }
   .cta-banner { flex-direction: column; text-align: center; padding: 2rem; }
+}
+
+/* ─── Maps (OpenStreetMap + Google Places) ─── */
+.osm-map {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-100);
+}
+
+.osm-map__canvas {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.osm-map__farm-marker {
+  background: var(--white);
+  border: 2px solid var(--green-600);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.delivery-address-picker__map-wrap {
+  margin-bottom: 1rem;
+}
+
+.delivery-address-picker__map-hint {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  margin-top: 0.45rem;
+  line-height: 1.45;
+}
+
+.delivery-address-picker__locate {
+  width: 100%;
+  font-size: 0.88rem;
+  padding: 0.55rem 1rem;
+}
+
+.delivery-address-picker__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.delivery-address-picker__error {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #c0392b;
+}
+
+.form-hint-inline {
+  font-weight: 400;
+  color: var(--gray-600);
+  font-size: 0.82rem;
+}
+
+.delivery-tracking-map {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.delivery-tracking-map__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.delivery-tracking-map__header h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.delivery-tracking-map__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--green-800);
+  background: var(--green-50);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.delivery-tracking-map__status {
+  font-size: 0.88rem;
+  color: var(--gray-600);
+  margin-bottom: 0.75rem;
+}
+
+.delivery-tracking-map__status--error {
+  color: #c0392b;
+}
+
+.delivery-tracking-map__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  font-size: 0.82rem;
+  color: var(--gray-600);
+  margin-top: 0.65rem;
+}
+
+.admin-order-card .delivery-tracking-map {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+}
+
+.admin-order-card .delivery-tracking-map .osm-map {
+  height: 180px !important;
+}
+
+.pac-container {
+  z-index: 10050 !important;
+}
+
+.address-search__error {
+  font-size: 0.78rem;
+  color: #c0392b;
+  margin-top: 0.4rem;
+  line-height: 1.45;
+}
+
+.osm-address-search {
+  position: relative;
+}
+
+.osm-address-search__hint {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  margin-top: 0.35rem;
+}
+
+.osm-address-search__list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10060;
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.osm-address-search__option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--gray-800);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.osm-address-search__option:hover,
+.osm-address-search__option:focus {
+  background: var(--green-50);
+  outline: none;
 }
 
 @media (max-width: 768px) {

@@ -29,6 +29,23 @@ Restart the server after changing `.env`.
 http://localhost:5173/admin/login
 ```
 
+If Vite uses another port (e.g. `5174`), add that URL to **Google Cloud → API key → Website restrictions**:
+
+```
+http://localhost:5174/*
+```
+
+Or use `http://localhost/*` to allow all local ports.
+
+## Troubleshooting login
+
+| Error | Fix |
+|-------|-----|
+| Invalid email or password | Create user in Firebase → Authentication → Users with the same email as `ADMIN_EMAILS` in `server/.env` |
+| Email/password disabled | Firebase → Authentication → Sign-in method → enable **Email/Password** |
+| API key rejected | Google Cloud → Credentials → your browser key → add `http://localhost:5173/*` and `http://localhost:5174/*` |
+| Login works but admin API fails | `ADMIN_EMAILS` in `server/.env` must include your Firebase user email exactly |
+
 ## Admin features
 
 | Page | URL | Actions |

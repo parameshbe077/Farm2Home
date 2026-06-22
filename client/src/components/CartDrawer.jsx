@@ -7,7 +7,13 @@ import { addTrackHistory } from '../utils/trackOrderStorage';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
+import DeliveryAddressPicker from './maps/DeliveryAddressPicker';
+
 const CUSTOMER_KEY = 'farm2home_customer';
+const ALLOWED_PINCODES = (import.meta.env.VITE_DELIVERY_PINCODES || '509208')
+  .split(',')
+  .map((code) => code.trim())
+  .filter(Boolean);
 
 const EMPTY_CUSTOMER = {
   name: '',
@@ -15,6 +21,8 @@ const EMPTY_CUSTOMER = {
   address: '',
   area: '',
   pincode: '',
+  lat: null,
+  lng: null,
 };
 
 function loadSavedCustomer() {
@@ -95,13 +103,27 @@ export default function CartDrawer() {
       showToast('Please enter a valid 6-digit pincode');
       return;
     }
+    if (!ALLOWED_PINCODES.includes(pincode)) {
+      showToast(`Sorry, delivery is available only for pincode ${ALLOWED_PINCODES.join(', ')}`);
+      return;
+    }
 
-    const payload = { name, phone, address, area, pincode };
+    const payload = {
+      name,
+      phone,
+      address,
+      area,
+      pincode,
+    };
+    if (customer.lat != null && customer.lng != null) {
+      payload.lat = customer.lat;
+      payload.lng = customer.lng;
+    }
 
     setCheckingOut(true);
     try {
       const order = await placeOrder(cart, payload);
-      localStorage.setItem(CUSTOMER_KEY, JSON.stringify(payload));
+      localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, ...payload }));
       const orderNumber = order.orderNumber || order.id.slice(-6).toUpperCase();
       addTrackHistory(orderNumber, phone);
       showToast(`Order placed! Your order #${orderNumber}`);
@@ -158,6 +180,9 @@ export default function CartDrawer() {
           {cart.length > 0 && (
             <div className="cart-drawer__checkout cart-drawer__checkout--inline">
               <p className="cart-drawer__checkout-title">Delivery details</p>
+              <p className="form-hint">
+                Delivery currently available only for pincodes {ALLOWED_PINCODES.join(', ')}.
+              </p>
               <div className="form-group">
                 <label htmlFor="checkout-name">Your name</label>
                 <input
@@ -180,41 +205,11 @@ export default function CartDrawer() {
                   autoComplete="tel"
                 />
               </div>
-              <div className="form-group">
-                <label htmlFor="checkout-address">Delivery address</label>
-                <textarea
-                  id="checkout-address"
-                  rows={2}
-                  placeholder="House no., street, landmark"
-                  value={customer.address}
-                  onChange={(e) => updateField('address', e.target.value)}
-                  autoComplete="street-address"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="checkout-area">Area / city</label>
-                <input
-                  id="checkout-area"
-                  type="text"
-                  placeholder="e.g. Madurai"
-                  value={customer.area}
-                  onChange={(e) => updateField('area', e.target.value)}
-                  autoComplete="address-level2"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="checkout-pincode">Pincode</label>
-                <input
-                  id="checkout-pincode"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="6-digit pincode"
-                  maxLength={6}
-                  value={customer.pincode}
-                  onChange={(e) => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  autoComplete="postal-code"
-                />
-              </div>
+              <DeliveryAddressPicker
+                value={customer}
+                onChange={(patch) => setCustomer((c) => ({ ...c, ...patch }))}
+                disabled={checkingOut}
+              />
             </div>
           )}
         </div>

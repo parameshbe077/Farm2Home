@@ -47,3 +47,21 @@ export function sendContact(form) {
     body: JSON.stringify(form),
   });
 }
+
+export function geocodeAddress(address) {
+  const query = new URLSearchParams({ address });
+  return request(`/geocode?${query.toString()}`);
+}
+
+export function reverseGeocodeAddress(lat, lng) {
+  const query = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng),
+  });
+  return request(`/geocode/reverse?${query.toString()}`);
+}
+
+export function searchAddresses(query) {
+  const params = new URLSearchParams({ q: query });
+  return request(`/geocode/search?${params.toString()}`);
+}

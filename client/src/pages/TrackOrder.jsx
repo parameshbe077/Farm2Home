@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import DeliveryTrackingMap from '../components/maps/DeliveryTrackingMap';
 import PageBanner from '../components/PageBanner';
 import { trackOrder as fetchOrder } from '../api/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -228,6 +229,8 @@ export default function TrackOrder() {
                   📍 Deliver to: {[order.customer.address, order.customer.area, order.customer.pincode].filter(Boolean).join(', ')}
                 </p>
               )}
+
+              <DeliveryTrackingMap customer={order.customer} status={order.status} />
 
               <Link to="/products" className="btn btn--outline btn--full">Order again</Link>
             </div>
