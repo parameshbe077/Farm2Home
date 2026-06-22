@@ -44,8 +44,13 @@ export function initFirebase() {
   }
 
   try {
+    const storageBucket =
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      `${serviceAccount.project_id}.firebasestorage.app`;
+
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
+      storageBucket,
     });
     db = admin.firestore();
     console.log('Firebase Firestore connected');

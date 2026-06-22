@@ -22,9 +22,11 @@ export function CartProvider({ children }) {
     [cart]
   );
 
-  const addToCart = (productId) => {
+  const addToCart = (productId, maxQty) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === productId);
+      const currentQty = existing?.qty || 0;
+      if (maxQty != null && currentQty >= maxQty) return prev;
       if (existing) {
         return prev.map((item) =>
           item.id === productId ? { ...item, qty: item.qty + 1 } : item
@@ -34,12 +36,15 @@ export function CartProvider({ children }) {
     });
   };
 
-  const updateQty = (productId, delta) => {
+  const updateQty = (productId, delta, maxQty) => {
     setCart((prev) =>
       prev
-        .map((item) =>
-          item.id === productId ? { ...item, qty: item.qty + delta } : item
-        )
+        .map((item) => {
+          if (item.id !== productId) return item;
+          const nextQty = item.qty + delta;
+          if (maxQty != null && nextQty > maxQty) return item;
+          return { ...item, qty: nextQty };
+        })
         .filter((item) => item.qty > 0)
     );
   };

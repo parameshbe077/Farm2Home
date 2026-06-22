@@ -15,10 +15,33 @@ function applyFilters(list, { category, featured }) {
   return result.sort((a, b) => a.id - b.id);
 }
 
+function parseStock(value, fallback = 0) {
+  if (typeof value === 'number' && !Number.isNaN(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+  if (value !== undefined && value !== null && value !== '') {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) return Math.max(0, Math.floor(parsed));
+  }
+  return fallback;
+}
+
 function normalizeProduct(product) {
+  if (!product) return product;
+
+  const hasStock = typeof product.stock === 'number' && !Number.isNaN(product.stock);
+  const stock = hasStock
+    ? Math.max(0, Math.floor(product.stock))
+    : (product.inStock === false ? 0 : 50);
+  const imageUrl = typeof product.imageUrl === 'string' && product.imageUrl.trim()
+    ? product.imageUrl.trim()
+    : null;
+
   return {
     ...product,
-    inStock: product.inStock !== false,
+    stock,
+    inStock: stock > 0,
+    imageUrl,
   };
 }
 
@@ -41,7 +64,8 @@ export async function getProductById(id) {
   const numId = Number(id);
 
   if (!isFirebaseReady()) {
-    return seedProducts.find((p) => p.id === numId) || null;
+    const found = seedProducts.find((p) => p.id === numId);
+    return found ? normalizeProduct(found) : null;
   }
 
   const db = getFirestore();
@@ -78,13 +102,18 @@ function validateProduct(data, isCreate = false) {
   if (data.price !== undefined && (typeof data.price !== 'number' || data.price < 0)) {
     errors.push('Price must be a positive number');
   }
+  if (data.stock !== undefined) {
+    const stock = parseStock(data.stock, -1);
+    if (stock < 0) errors.push('Stock must be a whole number 0 or more');
+  }
   if (errors.length) throw new Error(errors.join(', '));
 }
 
 export async function createProduct(data) {
   validateProduct(data, true);
   const id = await getNextProductId();
-  const product = {
+  const stock = parseStock(data.stock, 0);
+  const product = normalizeProduct({
     id,
     name: data.name.trim(),
     category: data.category,
@@ -92,8 +121,9 @@ export async function createProduct(data) {
     price: Number(data.price),
     unit: data.unit?.trim() || 'per kg',
     featured: Boolean(data.featured),
-    inStock: data.inStock !== false,
-  };
+    stock,
+    ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl?.trim() || null }),
+  });
 
   if (!isFirebaseReady()) {
     seedProducts.push(product);
@@ -111,7 +141,9 @@ export async function updateProduct(id, data) {
 
   validateProduct({ ...existing, ...data });
 
-  const updated = {
+  const stock = data.stock !== undefined ? parseStock(data.stock, 0) : existing.stock;
+
+  const updated = normalizeProduct({
     ...existing,
     ...(data.name !== undefined && { name: data.name.trim() }),
     ...(data.category !== undefined && { category: data.category }),
@@ -119,20 +151,19 @@ export async function updateProduct(id, data) {
     ...(data.price !== undefined && { price: Number(data.price) }),
     ...(data.unit !== undefined && { unit: data.unit.trim() }),
     ...(data.featured !== undefined && { featured: Boolean(data.featured) }),
-    ...(data.inStock !== undefined && { inStock: Boolean(data.inStock) }),
-  };
-
-  const normalized = normalizeProduct(updated);
+    ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl?.trim() || null }),
+    stock,
+  });
 
   if (!isFirebaseReady()) {
     const idx = seedProducts.findIndex((p) => p.id === Number(id));
-    if (idx >= 0) seedProducts[idx] = normalized;
-    return normalized;
+    if (idx >= 0) seedProducts[idx] = updated;
+    return updated;
   }
 
   const db = getFirestore();
-  await db.collection('products').doc(String(id)).set(normalized);
-  return normalized;
+  await db.collection('products').doc(String(id)).set(updated);
+  return updated;
 }
 
 export async function deleteProduct(id) {

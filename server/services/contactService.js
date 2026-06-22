@@ -20,3 +20,17 @@ export async function createContactMessage({ name, email, message }) {
   const ref = await db.collection('contactMessages').add(entry);
   return { id: ref.id, ...entry };
 }
+
+export async function getContactMessages() {
+  if (!isFirebaseReady()) {
+    return [...memoryMessages].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    );
+  }
+
+  const db = getFirestore();
+  const snapshot = await db.collection('contactMessages').get();
+  return snapshot.docs
+    .map((doc) => ({ id: doc.id, ...doc.data() }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}

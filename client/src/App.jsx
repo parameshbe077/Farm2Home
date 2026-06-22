@@ -10,10 +10,13 @@ import Products from './pages/Products';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import TrackOrder from './pages/TrackOrder';
+import CustomerLogin from './pages/CustomerLogin';
+import MyOrders from './pages/MyOrders';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
+import AdminMessages from './pages/admin/AdminMessages';
 import './admin.css';
 
 function StoreRoutes() {
@@ -24,6 +27,8 @@ function StoreRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/track-order" element={<TrackOrder />} />
+      <Route path="/login" element={<CustomerLogin />} />
+      <Route path="/my-orders" element={<MyOrders />} />
     </Routes>
   );
 }
@@ -36,6 +41,7 @@ function AdminRoutes() {
         <Route index element={<AdminDashboard />} />
         <Route path="products" element={<AdminProducts />} />
         <Route path="orders" element={<AdminOrders />} />
+        <Route path="messages" element={<AdminMessages />} />
       </Route>
     </Routes>
   );

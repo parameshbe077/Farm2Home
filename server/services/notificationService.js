@@ -59,6 +59,7 @@ function buildOrderEmail(order) {
 
 Order #${shortId}
 Total: ${formatInr(order.total)}
+Payment: Cash on Delivery
 Status: ${order.status || 'pending'}
 
 Customer

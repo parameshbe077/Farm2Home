@@ -1,24 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { fetchAdminOrders, updateOrderStatus } from '../../api/adminApi';
 import DeliveryTrackingMap from '../../components/maps/DeliveryTrackingMap';
+import ProductImage from '../../components/ProductImage';
 import { formatPrice } from '../../utils/formatPrice';
 
 const STATUSES = ['pending', 'confirmed', 'delivered', 'cancelled'];
 
 export default function AdminOrders() {
   const { getToken } = useAdminAuth();
+  const [searchParams] = useSearchParams();
+  const focusOrderId = searchParams.get('order');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(null);
+  const [highlightId, setHighlightId] = useState(null);
+  const scrolledToRef = useRef(null);
 
   const loadOrders = async () => {
     setLoading(true);
     setError('');
     try {
       const token = await getToken();
-      setOrders(await fetchAdminOrders(token));
+      const data = await fetchAdminOrders(token);
+      setOrders([...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -27,6 +34,28 @@ export default function AdminOrders() {
   };
 
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => {
+    if (!focusOrderId || loading) return;
+    if (!orders.some((o) => o.id === focusOrderId)) return;
+    if (scrolledToRef.current === focusOrderId) return;
+
+    scrolledToRef.current = focusOrderId;
+    const el = document.getElementById(`order-${focusOrderId}`);
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setHighlightId(focusOrderId);
+    });
+
+    const timer = setTimeout(() => setHighlightId(null), 2500);
+    return () => clearTimeout(timer);
+  }, [focusOrderId, loading, orders]);
+
+  useEffect(() => {
+    scrolledToRef.current = null;
+  }, [focusOrderId]);
 
   const handleStatusChange = async (orderId, status) => {
     setUpdating(orderId);
@@ -65,7 +94,11 @@ export default function AdminOrders() {
       ) : (
         <div className="admin-orders">
           {orders.map((order) => (
-            <article className="admin-order-card" key={order.id}>
+            <article
+              id={`order-${order.id}`}
+              className={`admin-order-card${highlightId === order.id ? ' admin-order-card--highlight' : ''}`}
+              key={order.id}
+            >
               <div className="admin-order-card__header">
                 <div>
                   <strong>Order #{order.id.slice(-6).toUpperCase()}</strong>
@@ -101,14 +134,22 @@ export default function AdminOrders() {
               <ul className="admin-order-card__items">
                 {order.items?.map((item) => (
                   <li key={item.id}>
-                    <span>{item.emoji} {item.name}</span>
+                    <span className="admin-order-item__name">
+                      <span className="admin-order-item__thumb">
+                        <ProductImage product={item} variant="thumb" />
+                      </span>
+                      {item.name}
+                    </span>
                     <span>{item.qty} × {formatPrice(item.price)}</span>
                   </li>
                 ))}
               </ul>
               <div className="admin-order-card__footer">
-                <span>Total</span>
-                <strong>{formatPrice(order.total)}</strong>
+                <span className="admin-order-card__payment">💵 Cash on Delivery</span>
+                <div className="admin-order-card__total">
+                  <span>Total</span>
+                  <strong>{formatPrice(order.total)}</strong>
+                </div>
               </div>
             </article>
           ))}

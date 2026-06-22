@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import DeliveryTrackingMap from '../components/maps/DeliveryTrackingMap';
+import ProductImage from '../components/ProductImage';
 import PageBanner from '../components/PageBanner';
 import { trackOrder as fetchOrder } from '../api/api';
 import { formatPrice } from '../utils/formatPrice';
@@ -213,7 +214,12 @@ export default function TrackOrder() {
               <ul className="track-order__items">
                 {order.items?.map((item) => (
                   <li key={`${item.id}-${item.name}`}>
-                    <span>{item.emoji} {item.name}</span>
+                    <span className="track-order__item-name">
+                      <span className="track-order__item-thumb">
+                        <ProductImage product={item} variant="thumb" />
+                      </span>
+                      {item.name}
+                    </span>
                     <span>{item.qty} × {formatPrice(item.price)}</span>
                   </li>
                 ))}
@@ -223,6 +229,8 @@ export default function TrackOrder() {
                 <span>Total</span>
                 <strong>{formatPrice(order.total)}</strong>
               </div>
+
+              <p className="track-order__payment">💵 Payment: Cash on Delivery</p>
 
               {(order.customer?.address || order.customer?.area) && (
                 <p className="track-order__address">

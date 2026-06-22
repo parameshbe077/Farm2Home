@@ -9,6 +9,7 @@ import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
 import contactRouter from './routes/contact.js';
 import geocodeRouter from './routes/geocode.js';
+import customersRouter from './routes/customers.js';
 import adminRouter from './routes/admin/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/customers', customersRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/geocode', geocodeRouter);
 app.use('/api/admin', adminRouter);

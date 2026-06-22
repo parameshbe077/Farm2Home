@@ -1,9 +1,13 @@
 const API_BASE = '/api';
 
 async function request(path, options = {}) {
+  const { headers: optionHeaders, ...rest } = options;
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+    ...rest,
+    headers: {
+      'Content-Type': 'application/json',
+      ...optionHeaders,
+    },
   });
 
   const data = await res.json().catch(() => ({}));
@@ -13,6 +17,18 @@ async function request(path, options = {}) {
   }
 
   return data;
+}
+
+async function authRequest(path, token, options = {}) {
+  if (!token) throw new Error('Please sign in to continue');
+  const { headers: optionHeaders, ...rest } = options;
+  return request(path, {
+    ...rest,
+    headers: {
+      ...optionHeaders,
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }
 
 export function fetchProducts(params = {}) {
@@ -27,10 +43,25 @@ export function fetchProduct(id) {
   return request(`/products/${id}`);
 }
 
-export function placeOrder(items, customer = {}) {
-  return request('/orders', {
+export function placeOrder(items, customer, token) {
+  return authRequest('/orders', token, {
     method: 'POST',
     body: JSON.stringify({ items, customer }),
+  });
+}
+
+export function fetchMyProfile(token) {
+  return authRequest('/customers/me', token);
+}
+
+export function fetchMyOrders(token) {
+  return authRequest('/customers/me/orders', token);
+}
+
+export function updateMyProfile(token, profile) {
+  return authRequest('/customers/me', token, {
+    method: 'PUT',
+    body: JSON.stringify(profile),
   });
 }
 

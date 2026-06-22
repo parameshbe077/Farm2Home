@@ -1,12 +1,78 @@
 import { getFirestore, isFirebaseReady } from '../config/firebase.js';
-import { getProductsByIds } from './productsService.js';
+import { getProductsByIds, updateProduct } from './productsService.js';
 import { sendOrderAlert } from './notificationService.js';
 
 const memoryOrders = [];
 
+function qtyByProductId(items) {
+  return items.reduce((acc, item) => {
+    acc[item.id] = (acc[item.id] || 0) + item.qty;
+    return acc;
+  }, {});
+}
+
+function validateStock(items, productMap) {
+  const needed = qtyByProductId(items);
+
+  for (const [id, qty] of Object.entries(needed)) {
+    const product = productMap[Number(id)];
+    if (!product) {
+      throw new Error('One or more products are invalid');
+    }
+    if (product.stock < qty) {
+      if (product.stock <= 0) {
+        throw new Error(`${product.name} is out of stock`);
+      }
+      throw new Error(`Only ${product.stock} left for ${product.name}`);
+    }
+  }
+}
+
+function buildOrderItems(items, productMap) {
+  return items.map((item) => {
+    const product = productMap[item.id];
+    if (!product || product.stock < item.qty) return null;
+    return {
+      id: product.id,
+      name: product.name,
+      emoji: product.emoji,
+      imageUrl: product.imageUrl || null,
+      price: product.price,
+      qty: item.qty,
+      lineTotal: product.price * item.qty,
+    };
+  }).filter(Boolean);
+}
+
+async function decrementStock(items, productMap) {
+  const needed = qtyByProductId(items);
+
+  for (const [id, qty] of Object.entries(needed)) {
+    const product = productMap[Number(id)];
+    await updateProduct(id, { stock: product.stock - qty });
+  }
+}
+
+export async function getOrdersByUserId(userId) {
+  if (!userId) return [];
+
+  if (!isFirebaseReady()) {
+    return memoryOrders
+      .filter((o) => o.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map((o) => toPublicOrder(o, { includePhone: true }));
+  }
+
+  const db = getFirestore();
+  const snapshot = await db.collection('orders').where('userId', '==', userId).get();
+  return snapshot.docs
+    .map((doc) => toPublicOrder({ id: doc.id, ...doc.data() }, { includePhone: true }))
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
 export async function getOrders() {
   if (!isFirebaseReady()) {
-    return memoryOrders;
+    return [...memoryOrders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
   const db = getFirestore();
@@ -14,42 +80,29 @@ export async function getOrders() {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-export async function createOrder({ items, customer }) {
-  const productIds = items.map((item) => item.id);
+export async function createOrder({ items, customer, userId, userEmail }) {
+  const productIds = [...new Set(items.map((item) => item.id))];
   const products = await getProductsByIds(productIds);
   const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
-  const orderItems = items.map((item) => {
-    const product = productMap[item.id];
-    if (!product) return null;
-    if (product.inStock === false) return null;
-    return {
-      id: product.id,
-      name: product.name,
-      emoji: product.emoji,
-      price: product.price,
-      qty: item.qty,
-      lineTotal: product.price * item.qty,
-    };
-  }).filter(Boolean);
+  validateStock(items, productMap);
 
+  const orderItems = buildOrderItems(items, productMap);
   if (orderItems.length !== items.length) {
-    const unavailable = items.filter((item) => {
-      const product = productMap[item.id];
-      return !product || product.inStock === false;
-    });
-    if (unavailable.length) {
-      throw new Error('One or more products are out of stock or invalid');
-    }
-    throw new Error('One or more products are invalid');
+    throw new Error('One or more products are out of stock or invalid');
   }
 
   const total = orderItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const order = {
     items: orderItems,
     total,
-    customer: customer || {},
+    customer: {
+      ...(customer || {}),
+      ...(userEmail && { email: userEmail }),
+    },
+    userId: userId || null,
     status: 'pending',
+    paymentMethod: 'cod',
     createdAt: new Date().toISOString(),
   };
 
@@ -57,6 +110,7 @@ export async function createOrder({ items, customer }) {
     const saved = { id: String(memoryOrders.length + 1), ...order };
     saved.orderNumber = saved.id.slice(-6).toUpperCase();
     memoryOrders.push(saved);
+    await decrementStock(items, productMap);
     sendOrderAlert(saved).catch((err) => {
       console.error('Order alert failed:', err.message);
     });
@@ -64,9 +118,48 @@ export async function createOrder({ items, customer }) {
   }
 
   const db = getFirestore();
-  const ref = await db.collection('orders').add(order);
-  const saved = { id: ref.id, ...order, orderNumber: ref.id.slice(-6).toUpperCase() };
-  await ref.update({ orderNumber: saved.orderNumber });
+  const saved = await db.runTransaction(async (transaction) => {
+    const refs = productIds.map((id) => db.collection('products').doc(String(id)));
+    const docs = await Promise.all(refs.map((ref) => transaction.get(ref)));
+
+    const txProductMap = {};
+    docs.forEach((doc, index) => {
+      if (!doc.exists) throw new Error('One or more products are invalid');
+      const data = doc.data();
+      const id = productIds[index];
+      const stock = typeof data.stock === 'number' ? Math.max(0, Math.floor(data.stock)) : (data.inStock === false ? 0 : 50);
+      txProductMap[id] = {
+        ref: refs[index],
+        name: data.name,
+        stock,
+      };
+    });
+
+    const needed = qtyByProductId(items);
+    for (const [id, qty] of Object.entries(needed)) {
+      const product = txProductMap[Number(id)];
+      if (!product) throw new Error('One or more products are invalid');
+      if (product.stock < qty) {
+        if (product.stock <= 0) {
+          throw new Error(`${product.name} is out of stock`);
+        }
+        throw new Error(`Only ${product.stock} left for ${product.name}`);
+      }
+    }
+
+    for (const [id, qty] of Object.entries(needed)) {
+      const product = txProductMap[Number(id)];
+      const newStock = product.stock - qty;
+      transaction.update(product.ref, { stock: newStock, inStock: newStock > 0 });
+    }
+
+    const orderRef = db.collection('orders').doc();
+    const orderNumber = orderRef.id.slice(-6).toUpperCase();
+    const payload = { ...order, orderNumber };
+    transaction.set(orderRef, payload);
+    return { id: orderRef.id, ...payload };
+  });
+
   sendOrderAlert(saved).catch((err) => {
     console.error('Order alert failed:', err.message);
   });
@@ -105,7 +198,19 @@ function normalizePhone(phone) {
   return digits.slice(-10);
 }
 
-function toPublicOrder(order) {
+function toPublicOrder(order, { includePhone = false } = {}) {
+  const customer = {
+    name: order.customer?.name,
+    address: order.customer?.address,
+    area: order.customer?.area,
+    pincode: order.customer?.pincode,
+    lat: order.customer?.lat ?? null,
+    lng: order.customer?.lng ?? null,
+  };
+  if (includePhone) {
+    customer.phone = order.customer?.phone;
+  }
+
   return {
     id: order.id,
     orderNumber: order.orderNumber || order.id.slice(-6).toUpperCase(),
@@ -114,14 +219,8 @@ function toPublicOrder(order) {
     total: order.total,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
-    customer: {
-      name: order.customer?.name,
-      address: order.customer?.address,
-      area: order.customer?.area,
-      pincode: order.customer?.pincode,
-      lat: order.customer?.lat ?? null,
-      lng: order.customer?.lng ?? null,
-    },
+    paymentMethod: order.paymentMethod || 'cod',
+    customer,
   };
 }
 

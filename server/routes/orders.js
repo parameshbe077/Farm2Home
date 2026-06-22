@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { createOrder, trackOrder } from '../services/ordersService.js';
 import { validateCustomer } from '../utils/validateCustomer.js';
+import { requireCustomer } from '../middleware/customerAuth.js';
+import { upsertCustomerProfile } from '../services/customersService.js';
 
 const router = Router();
 
@@ -19,7 +21,7 @@ router.post('/track', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireCustomer, async (req, res, next) => {
   try {
     const { items, customer } = req.body;
 
@@ -35,7 +37,23 @@ router.post('/', async (req, res, next) => {
     const order = await createOrder({
       items,
       customer: validated.data,
+      userId: req.user.uid,
+      userEmail: req.user.email || validated.data.email,
     });
+
+    await upsertCustomerProfile(req.user.uid, {
+      email: req.user.email || '',
+      name: validated.data.name,
+      phone: validated.data.phone,
+      address: validated.data.address,
+      area: validated.data.area,
+      pincode: validated.data.pincode,
+      lat: validated.data.lat ?? null,
+      lng: validated.data.lng ?? null,
+    }).catch((err) => {
+      console.error('Profile save failed:', err.message);
+    });
+
     res.status(201).json(order);
   } catch (err) {
     if (err.message === 'One or more products are invalid' || err.message === 'One or more products are out of stock or invalid') {

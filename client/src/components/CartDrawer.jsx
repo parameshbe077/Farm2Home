@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { fetchProducts } from '../api/api';
-import { placeOrder } from '../api/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { fetchProducts, fetchMyProfile, placeOrder } from '../api/api';
 import { formatPrice } from '../utils/formatPrice';
-import { addTrackHistory } from '../utils/trackOrderStorage';
 import { useCart } from '../context/CartContext';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useToast } from '../context/ToastContext';
 
 import DeliveryAddressPicker from './maps/DeliveryAddressPicker';
+import ProductImage from './ProductImage';
 
-const CUSTOMER_KEY = 'farm2home_customer';
+const CUSTOMER_KEY = 'farm2home_customer_guest';
 const ALLOWED_PINCODES = (import.meta.env.VITE_DELIVERY_PINCODES || '509208')
   .split(',')
   .map((code) => code.trim())
@@ -43,10 +43,34 @@ export default function CartDrawer() {
     clearCart,
   } = useCart();
   const { showToast } = useToast();
+  const { user, loading: authLoading, getToken } = useCustomerAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [checkingOut, setCheckingOut] = useState(false);
   const [customer, setCustomer] = useState(loadSavedCustomer);
+
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const profile = await fetchMyProfile(token);
+        if (cancelled) return;
+        setCustomer((c) => ({
+          ...c,
+          name: profile.name || c.name,
+          phone: profile.phone || c.phone,
+          address: profile.address || c.address,
+          area: profile.area || c.area,
+          pincode: profile.pincode || c.pincode,
+          lat: profile.lat ?? c.lat,
+          lng: profile.lng ?? c.lng,
+        }));
+      } catch { /* use saved/local fields */ }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, user, getToken]);
 
   useEffect(() => {
     if (isOpen && cart.length > 0) {
@@ -73,6 +97,13 @@ export default function CartDrawer() {
   const handleCheckout = async () => {
     if (!cart.length) {
       showToast('Your cart is empty');
+      return;
+    }
+
+    if (!user) {
+      showToast('Please sign in to place your order');
+      closeCart();
+      navigate('/login', { state: { from: '/products' } });
       return;
     }
 
@@ -122,14 +153,14 @@ export default function CartDrawer() {
 
     setCheckingOut(true);
     try {
-      const order = await placeOrder(cart, payload);
+      const token = await getToken();
+      const order = await placeOrder(cart, payload, token);
       localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, ...payload }));
       const orderNumber = order.orderNumber || order.id.slice(-6).toUpperCase();
-      addTrackHistory(orderNumber, phone);
       showToast(`Order placed! Your order #${orderNumber}`);
       clearCart();
       closeCart();
-      navigate(`/track-order?order=${orderNumber}&phone=${encodeURIComponent(phone)}`);
+      navigate('/my-orders');
     } catch (err) {
       showToast(err.message || 'Failed to place order');
     } finally {
@@ -154,79 +185,131 @@ export default function CartDrawer() {
         <div className="cart-drawer__body">
           {!cart.length ? (
             <div className="cart-empty">
-              <span>🛒</span>
-              <p>Your cart is empty</p>
+              <span className="cart-empty__icon" aria-hidden>🛒</span>
+              <p className="cart-empty__title">Your cart is empty</p>
+              <p className="cart-empty__text">Add fresh produce from our shop to get started.</p>
             </div>
           ) : (
-            cartLines.map(({ id, qty, product, lineTotal }) => (
-              <div className="cart-item" key={id}>
-                <div className="cart-item__emoji">{product.emoji}</div>
-                <div className="cart-item__info">
-                  <div className="cart-item__name">{product.name}</div>
-                  <div className="cart-item__price">
-                    {formatPrice(product.price)} × {qty} = {formatPrice(lineTotal)}
+            <>
+              <div className="cart-drawer__items">
+                {cartLines.map(({ id, qty, product, lineTotal }) => {
+                  const stock = typeof product.stock === 'number' ? product.stock : 0;
+                  const remaining = Math.max(0, stock - qty);
+                  const atMax = remaining <= 0;
+                  return (
+                    <article className="cart-item" key={id}>
+                      <div className="cart-item__thumb">
+                        <ProductImage product={product} variant="thumb" />
+                      </div>
+                      <div className="cart-item__content">
+                        <div className="cart-item__top">
+                          <h3 className="cart-item__name">{product.name}</h3>
+                          <button type="button" className="cart-item__remove" onClick={() => removeFromCart(id)}>
+                            Remove
+                          </button>
+                        </div>
+                        <p className="cart-item__price">
+                          {formatPrice(product.price)} × {qty}
+                          <span className="cart-item__line-total">{formatPrice(lineTotal)}</span>
+                        </p>
+                        {stock > 0 && (
+                          <span className={`cart-item__stock${atMax ? ' cart-item__stock--max' : ''}`}>
+                            {atMax ? 'Max in cart' : `${remaining} left`}
+                          </span>
+                        )}
+                        <div className="cart-item__qty">
+                          <button type="button" className="qty-btn" onClick={() => updateQty(id, -1)} aria-label="Decrease quantity">−</button>
+                          <span className="cart-item__qty-value">{qty}</span>
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            onClick={() => updateQty(id, 1, stock)}
+                            disabled={atMax}
+                            aria-label="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {!authLoading && !user && (
+                <div className="cart-drawer__auth-banner">
+                  <span className="cart-drawer__auth-icon" aria-hidden>🔐</span>
+                  <div>
+                    <p className="cart-drawer__auth-title">Sign in to checkout</p>
+                    <p className="cart-drawer__auth-text">Save your order history and place delivery orders.</p>
                   </div>
-                  <div className="cart-item__controls">
-                    <button className="qty-btn" onClick={() => updateQty(id, -1)}>−</button>
-                    <span>{qty}</span>
-                    <button className="qty-btn" onClick={() => updateQty(id, 1)}>+</button>
-                    <button className="cart-item__remove" onClick={() => removeFromCart(id)}>Remove</button>
-                  </div>
+                  <Link to="/login" className="cart-drawer__auth-btn" onClick={closeCart}>
+                    Sign in
+                  </Link>
                 </div>
-              </div>
-            ))
-          )}
+              )}
 
-          {cart.length > 0 && (
-            <div className="cart-drawer__checkout cart-drawer__checkout--inline">
-              <p className="cart-drawer__checkout-title">Delivery details</p>
-              <p className="form-hint">
-                Delivery currently available only for pincodes {ALLOWED_PINCODES.join(', ')}.
-              </p>
-              <div className="form-group">
-                <label htmlFor="checkout-name">Your name</label>
-                <input
-                  id="checkout-name"
-                  type="text"
-                  placeholder="Full name"
-                  value={customer.name}
-                  onChange={(e) => updateField('name', e.target.value)}
-                  autoComplete="name"
-                />
+              {user && (
+                <div className="cart-drawer__checkout cart-drawer__checkout--inline">
+                  <p className="cart-drawer__checkout-title">Delivery details</p>
+                  <p className="cart-drawer__checkout-hint">
+                    Delivery available for pincodes {ALLOWED_PINCODES.join(', ')}.
+                  </p>
+                  <div className="form-group">
+                    <label htmlFor="checkout-name">Your name</label>
+                    <input
+                      id="checkout-name"
+                      type="text"
+                      placeholder="Full name"
+                      value={customer.name}
+                      onChange={(e) => updateField('name', e.target.value)}
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="checkout-phone">Phone number</label>
+                    <input
+                      id="checkout-phone"
+                      type="tel"
+                      placeholder="10-digit mobile number"
+                      value={customer.phone}
+                      onChange={(e) => updateField('phone', e.target.value)}
+                      autoComplete="tel"
+                    />
+                  </div>
+                  <DeliveryAddressPicker
+                    value={customer}
+                    onChange={(patch) => setCustomer((c) => ({ ...c, ...patch }))}
+                    disabled={checkingOut}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {cart.length > 0 && (
+          <div className="cart-drawer__footer">
+            <div className="cart-drawer__summary">
+              <div className="cart-drawer__payment">
+                <span className="cart-drawer__payment-label">Payment</span>
+                <strong>Cash on Delivery</strong>
+                <p className="cart-drawer__payment-hint">Pay when your order arrives.</p>
               </div>
-              <div className="form-group">
-                <label htmlFor="checkout-phone">Phone number</label>
-                <input
-                  id="checkout-phone"
-                  type="tel"
-                  placeholder="10-digit mobile number"
-                  value={customer.phone}
-                  onChange={(e) => updateField('phone', e.target.value)}
-                  autoComplete="tel"
-                />
+              <div className="cart-drawer__total">
+                <span>Total</span>
+                <strong>{formatPrice(total)}</strong>
               </div>
-              <DeliveryAddressPicker
-                value={customer}
-                onChange={(patch) => setCustomer((c) => ({ ...c, ...patch }))}
-                disabled={checkingOut}
-              />
             </div>
-          )}
-        </div>
-
-        <div className="cart-drawer__footer">
-          <div className="cart-drawer__total">
-            <span>Total</span>
-            <strong>{formatPrice(total)}</strong>
+            <button
+              className="btn btn--primary btn--full cart-drawer__submit"
+              onClick={handleCheckout}
+              disabled={checkingOut || !user || authLoading}
+            >
+              {!user ? 'Sign in to order' : checkingOut ? 'Placing order…' : 'Place order'}
+            </button>
           </div>
-          <button
-            className="btn btn--primary btn--full"
-            onClick={handleCheckout}
-            disabled={checkingOut || !cart.length}
-          >
-            {checkingOut ? 'Placing order…' : 'Place Order'}
-          </button>
-        </div>
+        )}
       </aside>
     </>
   );

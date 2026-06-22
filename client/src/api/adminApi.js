@@ -37,12 +37,35 @@ export function updateAdminProduct(token, id, product) {
   });
 }
 
+export async function uploadAdminProductImage(token, id, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const res = await fetch(`${API_BASE}/products/${id}/image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Photo upload failed');
+  }
+
+  return data;
+}
+
 export function deleteAdminProduct(token, id) {
   return adminRequest(`/products/${id}`, token, { method: 'DELETE' });
 }
 
 export function fetchAdminOrders(token) {
   return adminRequest('/orders', token);
+}
+
+export function fetchAdminContactMessages(token) {
+  return adminRequest('/contact-messages', token);
 }
 
 export function updateOrderStatus(token, id, status) {

@@ -1,12 +1,19 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { useState } from 'react';
 
 export default function Header() {
   const { cartCount, openCart } = useCart();
+  const { user, logout } = useCustomerAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    closeMenu();
+    await logout();
+  };
 
   return (
     <header className="header">
@@ -29,9 +36,28 @@ export default function Header() {
           <NavLink to="/about" className="nav__link" onClick={closeMenu}>About</NavLink>
           <NavLink to="/contact" className="nav__link" onClick={closeMenu}>Contact</NavLink>
           <NavLink to="/track-order" className="nav__link" onClick={closeMenu}>Track Order</NavLink>
+          {user ? (
+            <>
+              <NavLink to="/my-orders" className="nav__link" onClick={closeMenu}>My Orders</NavLink>
+              <button type="button" className="nav__link nav__link--button nav__link--mobile-only" onClick={handleLogout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login" className="nav__link nav__link--mobile-only" onClick={closeMenu}>Sign in</NavLink>
+          )}
         </nav>
 
         <div className="header__actions">
+          {user ? (
+            <button type="button" className="header__account-btn" onClick={handleLogout}>
+              Sign out
+            </button>
+          ) : (
+            <Link to="/login" className="header__account-btn header__account-btn--link" onClick={closeMenu}>
+              Sign in
+            </Link>
+          )}
           <button className="cart-btn" onClick={openCart} aria-label="Open cart">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
