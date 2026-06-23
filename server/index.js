@@ -19,7 +19,12 @@ const clientDist = path.join(__dirname, '../client/dist');
 
 initFirebase();
 
-app.use(cors());
+const clientOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors(clientOrigins.length ? { origin: clientOrigins } : {}));
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => {

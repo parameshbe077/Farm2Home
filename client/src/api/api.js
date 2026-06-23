@@ -1,4 +1,6 @@
-const API_BASE = '/api';
+import { getApiBase } from './apiConfig.js';
+
+const API_BASE = getApiBase();
 
 async function request(path, options = {}) {
   const { headers: optionHeaders, ...rest } = options;

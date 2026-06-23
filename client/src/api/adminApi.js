@@ -1,4 +1,6 @@
-const API_BASE = '/api/admin';
+import { getAdminApiBase } from './apiConfig.js';
+
+const API_BASE = getAdminApiBase();
 
 async function adminRequest(path, token, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
