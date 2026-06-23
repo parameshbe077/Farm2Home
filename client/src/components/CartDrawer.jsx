@@ -33,6 +33,13 @@ function loadSavedCustomer() {
   return { ...EMPTY_CUSTOMER };
 }
 
+function createClientOrderId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function CartDrawer() {
   const {
     cart,
@@ -47,6 +54,7 @@ export default function CartDrawer() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState(null);
   const [customer, setCustomer] = useState(loadSavedCustomer);
 
   useEffect(() => {
@@ -154,10 +162,13 @@ export default function CartDrawer() {
     setCheckingOut(true);
     try {
       const token = await getToken();
-      const order = await placeOrder(cart, payload, token);
+      const requestOrderId = pendingOrderId || createClientOrderId();
+      setPendingOrderId(requestOrderId);
+      const order = await placeOrder(cart, payload, token, requestOrderId);
       localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, ...payload }));
       const orderNumber = order.orderNumber || order.id.slice(-6).toUpperCase();
       showToast(`Order placed! Your order #${orderNumber}`);
+      setPendingOrderId(null);
       clearCart();
       closeCart();
       navigate('/my-orders');

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
@@ -33,10 +33,11 @@ export function CustomerAuthProvider({ children }) {
 
   const logout = () => signOut(auth);
 
-  const getToken = async () => {
-    if (!user) return null;
-    return user.getIdToken();
-  };
+  const getToken = useCallback(async (forceRefresh = false) => {
+    const current = auth.currentUser;
+    if (!current) return null;
+    return current.getIdToken(forceRefresh);
+  }, []);
 
   return (
     <CustomerAuthContext.Provider

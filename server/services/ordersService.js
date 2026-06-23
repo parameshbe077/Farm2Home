@@ -53,6 +53,34 @@ async function decrementStock(items, productMap) {
   }
 }
 
+function normalizeClientOrderId(value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return null;
+  return normalized.slice(0, 120);
+}
+
+async function findExistingOrderByClientId(userId, clientOrderId) {
+  if (!userId || !clientOrderId) return null;
+
+  if (!isFirebaseReady()) {
+    return memoryOrders.find((order) => (
+      order.userId === userId && order.clientOrderId === clientOrderId
+    )) || null;
+  }
+
+  const db = getFirestore();
+  const existing = await db.collection('orders')
+    .where('clientOrderId', '==', clientOrderId)
+    .limit(1)
+    .get();
+
+  if (existing.empty) return null;
+  const found = existing.docs[0];
+  const data = found.data();
+  if (data.userId !== userId) return null;
+  return { id: found.id, ...data };
+}
+
 export async function getOrdersByUserId(userId) {
   if (!userId) return [];
 
@@ -60,13 +88,15 @@ export async function getOrdersByUserId(userId) {
     return memoryOrders
       .filter((o) => o.userId === userId)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .map((o) => toPublicOrder(o, { includePhone: true }));
+      .map((o) => toPublicOrder(o, { includePhone: true }))
+      .filter(Boolean);
   }
 
   const db = getFirestore();
   const snapshot = await db.collection('orders').where('userId', '==', userId).get();
   return snapshot.docs
     .map((doc) => toPublicOrder({ id: doc.id, ...doc.data() }, { includePhone: true }))
+    .filter(Boolean)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
@@ -80,7 +110,13 @@ export async function getOrders() {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-export async function createOrder({ items, customer, userId, userEmail }) {
+export async function createOrder({ items, customer, userId, userEmail, clientOrderId }) {
+  const safeClientOrderId = normalizeClientOrderId(clientOrderId);
+  const existingOrder = await findExistingOrderByClientId(userId, safeClientOrderId);
+  if (existingOrder) {
+    return existingOrder;
+  }
+
   const productIds = [...new Set(items.map((item) => item.id))];
   const products = await getProductsByIds(productIds);
   const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
@@ -101,6 +137,7 @@ export async function createOrder({ items, customer, userId, userEmail }) {
       ...(userEmail && { email: userEmail }),
     },
     userId: userId || null,
+    ...(safeClientOrderId && { clientOrderId: safeClientOrderId }),
     status: 'pending',
     paymentMethod: 'cod',
     createdAt: new Date().toISOString(),
@@ -198,7 +235,17 @@ function normalizePhone(phone) {
   return digits.slice(-10);
 }
 
+function toIsoDate(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value.toDate === 'function') return value.toDate().toISOString();
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
 function toPublicOrder(order, { includePhone = false } = {}) {
+  if (!order?.id) return null;
+
   const customer = {
     name: order.customer?.name,
     address: order.customer?.address,
@@ -212,13 +259,13 @@ function toPublicOrder(order, { includePhone = false } = {}) {
   }
 
   return {
-    id: order.id,
-    orderNumber: order.orderNumber || order.id.slice(-6).toUpperCase(),
+    id: String(order.id),
+    orderNumber: order.orderNumber || String(order.id).slice(-6).toUpperCase(),
     status: order.status,
-    items: order.items,
+    items: Array.isArray(order.items) ? order.items : [],
     total: order.total,
-    createdAt: order.createdAt,
-    updatedAt: order.updatedAt,
+    createdAt: toIsoDate(order.createdAt),
+    updatedAt: toIsoDate(order.updatedAt),
     paymentMethod: order.paymentMethod || 'cod',
     customer,
   };

@@ -27,24 +27,37 @@ function MyOrdersContent() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+
+    async function loadOrders(attempt = 0) {
       setLoading(true);
       setError('');
       try {
-        const token = await getToken();
+        const token = await getToken(attempt > 0);
+        if (!token) {
+          throw new Error('Please sign in to continue');
+        }
         const data = await fetchMyOrders(token);
-        if (!cancelled) setOrders(data);
+        if (!cancelled) setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (cancelled) return;
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 600));
+          if (!cancelled) return loadOrders(1);
+          return;
+        }
+        setError(err.message || 'Could not load your orders');
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    }
+
+    loadOrders();
     return () => { cancelled = true; };
-  }, [getToken, user?.uid]);
+  }, [getToken, user?.uid, reloadKey]);
 
   return (
     <div className="page">
@@ -62,6 +75,13 @@ function MyOrdersContent() {
         {error && (
           <div className="my-orders-state my-orders-state--error">
             <p className="my-orders-state__text">{error}</p>
+            <button
+              type="button"
+              className="btn btn--outline btn--sm"
+              onClick={() => setReloadKey((key) => key + 1)}
+            >
+              Try again
+            </button>
           </div>
         )}
 

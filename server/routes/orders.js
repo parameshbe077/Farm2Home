@@ -23,7 +23,7 @@ router.post('/track', async (req, res, next) => {
 
 router.post('/', requireCustomer, async (req, res, next) => {
   try {
-    const { items, customer } = req.body;
+    const { items, customer, clientOrderId } = req.body;
 
     if (!items?.length) {
       return res.status(400).json({ error: 'Cart is empty' });
@@ -39,6 +39,7 @@ router.post('/', requireCustomer, async (req, res, next) => {
       customer: validated.data,
       userId: req.user.uid,
       userEmail: req.user.email || validated.data.email,
+      clientOrderId,
     });
 
     await upsertCustomerProfile(req.user.uid, {

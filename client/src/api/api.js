@@ -2,18 +2,37 @@ const API_BASE = '/api';
 
 async function request(path, options = {}) {
   const { headers: optionHeaders, ...rest } = options;
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...rest,
-    headers: {
-      'Content-Type': 'application/json',
-      ...optionHeaders,
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...rest,
+      headers: {
+        'Content-Type': 'application/json',
+        ...optionHeaders,
+      },
+    });
+  } catch {
+    throw new Error('Could not reach the server. Make sure the app is running and try again.');
+  }
 
-  const data = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = {};
+    }
+  }
 
   if (!res.ok) {
-    throw new Error(data.error || 'Something went wrong');
+    throw new Error(
+      data.error
+      || data.message
+      || (res.status === 502 || res.status === 503
+        ? 'Server is restarting. Please try again in a moment.'
+        : `Request failed (${res.status})`)
+    );
   }
 
   return data;
@@ -43,10 +62,10 @@ export function fetchProduct(id) {
   return request(`/products/${id}`);
 }
 
-export function placeOrder(items, customer, token) {
+export function placeOrder(items, customer, token, clientOrderId) {
   return authRequest('/orders', token, {
     method: 'POST',
-    body: JSON.stringify({ items, customer }),
+    body: JSON.stringify({ items, customer, clientOrderId }),
   });
 }
 
