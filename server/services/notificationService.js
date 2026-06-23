@@ -19,14 +19,8 @@ function getAlertRecipients() {
   return raw.split(',').map((e) => e.trim()).filter(Boolean);
 }
 
-export function getOrderAlertStatus() {
-  const recipients = getAlertRecipients();
-  return {
-    configured: isSmtpConfigured() && recipients.length > 0,
-    smtpUser: process.env.SMTP_USER?.trim() || null,
-    recipientCount: recipients.length,
-    smtpHost: process.env.SMTP_HOST?.trim() || 'smtp.gmail.com',
-  };
+function isResendConfigured() {
+  return !!process.env.RESEND_API_KEY?.trim();
 }
 
 function isSmtpConfigured() {
@@ -35,7 +29,23 @@ function isSmtpConfigured() {
   return !!(user && pass);
 }
 
-function getFromAddress() {
+function isEmailConfigured() {
+  return getAlertRecipients().length > 0 && (isResendConfigured() || isSmtpConfigured());
+}
+
+export function getOrderAlertStatus() {
+  const recipients = getAlertRecipients();
+  const provider = isResendConfigured() ? 'resend' : (isSmtpConfigured() ? 'smtp' : null);
+  return {
+    configured: isEmailConfigured(),
+    provider,
+    recipientCount: recipients.length,
+    smtpUser: process.env.SMTP_USER?.trim() || null,
+    resendFrom: process.env.RESEND_FROM?.trim() || null,
+  };
+}
+
+function getSmtpFromAddress() {
   const user = process.env.SMTP_USER?.trim();
   const custom = process.env.SMTP_FROM?.trim();
 
@@ -44,6 +54,10 @@ function getFromAddress() {
   }
 
   return `"Farm2Home" <${user}>`;
+}
+
+function getResendFromAddress() {
+  return process.env.RESEND_FROM?.trim() || 'Farm2Home <onboarding@resend.dev>';
 }
 
 function createTransporter() {
@@ -59,7 +73,6 @@ function createTransporter() {
     socketTimeout: 20000,
   };
 
-  // Gmail on Render: use STARTTLS on 587 (port 465 / IPv6 often fails on free tier)
   if (host === 'smtp.gmail.com') {
     return nodemailer.createTransport({
       ...base,
@@ -114,6 +127,42 @@ Manage this order in your admin panel → Orders.`;
   };
 }
 
+async function sendViaResend(recipients, subject, text) {
+  const apiKey = process.env.RESEND_API_KEY.trim();
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: getResendFromAddress(),
+      to: recipients,
+      subject,
+      text,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = data.message || data.error || JSON.stringify(data);
+    throw new Error(`Resend: ${detail}`);
+  }
+
+  console.log(`Order alert email sent via Resend to ${recipients.join(', ')} (${data.id})`);
+}
+
+async function sendViaSmtp(recipients, subject, text) {
+  const transporter = createTransporter();
+  const info = await transporter.sendMail({
+    from: getSmtpFromAddress(),
+    to: recipients.join(', '),
+    subject,
+    text,
+  });
+  console.log(`Order alert email sent via SMTP to ${recipients.join(', ')} (${info.messageId})`);
+}
+
 export async function sendOrderAlert(order) {
   const recipients = getAlertRecipients();
   if (!recipients.length) {
@@ -121,22 +170,19 @@ export async function sendOrderAlert(order) {
     return;
   }
 
-  if (!isSmtpConfigured()) {
-    console.warn('Order alert skipped: set SMTP_USER and SMTP_PASS');
+  if (!isResendConfigured() && !isSmtpConfigured()) {
+    console.warn('Order alert skipped: set RESEND_API_KEY (Render) or SMTP_USER + SMTP_PASS (local)');
     return;
   }
 
-  const transporter = createTransporter();
   const { subject, text } = buildOrderEmail(order);
 
   try {
-    const info = await transporter.sendMail({
-      from: getFromAddress(),
-      to: recipients.join(', '),
-      subject,
-      text,
-    });
-    console.log(`Order alert email sent to ${recipients.join(', ')} (${info.messageId})`);
+    if (isResendConfigured()) {
+      await sendViaResend(recipients, subject, text);
+      return;
+    }
+    await sendViaSmtp(recipients, subject, text);
   } catch (err) {
     console.error('Order alert failed:', err.message);
     if (err.code) console.error('  code:', err.code);

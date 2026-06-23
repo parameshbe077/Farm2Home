@@ -19,7 +19,7 @@ const sampleOrder = {
 };
 
 console.log('Testing order alert email...');
-console.log('SMTP_USER:', process.env.SMTP_USER);
+console.log('Provider:', process.env.RESEND_API_KEY ? 'resend' : 'smtp');
 console.log('ORDER_ALERT_EMAILS:', process.env.ORDER_ALERT_EMAILS);
 
 sendOrderAlert(sampleOrder)
