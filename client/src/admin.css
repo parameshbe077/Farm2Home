@@ -51,6 +51,25 @@
   margin-bottom: 1rem;
 }
 
+.admin-login__notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-login__notice p {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: #92400e;
+  line-height: 1.45;
+}
+
+.admin-login__notice strong {
+  color: #78350f;
+}
+
 .admin-login__back,
 .admin-sidebar__store {
   display: block;

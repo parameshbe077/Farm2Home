@@ -3,7 +3,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import AdminLayout from './AdminLayout';
 
 export default function ProtectedAdminRoute() {
-  const { user, loading } = useAdminAuth();
+  const { user, isAdmin, loading } = useAdminAuth();
 
   if (loading) {
     return (
@@ -13,7 +13,7 @@ export default function ProtectedAdminRoute() {
     );
   }
 
-  if (!user) {
+  if (!user || !isAdmin) {
     return <Navigate to="/admin/login" replace />;
   }
 

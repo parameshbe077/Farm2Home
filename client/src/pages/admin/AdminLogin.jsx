@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
 export default function AdminLogin() {
-  const { user, loading, login } = useAdminAuth();
+  const { user, isAdmin, loading, login, logout } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,9 +13,18 @@ export default function AdminLogin() {
     return <div className="admin-loading"><p>Loading…</p></div>;
   }
 
-  if (user) {
+  if (user && isAdmin) {
     return <Navigate to="/admin" replace />;
   }
+
+  const handleSignOutOther = async () => {
+    setError('');
+    try {
+      await logout();
+    } catch (err) {
+      setError(err.message || 'Could not sign out');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,6 +65,17 @@ export default function AdminLogin() {
           <h1>Farm2Home Admin</h1>
           <p>Sign in to manage products and orders</p>
         </div>
+        {user && !isAdmin && (
+          <div className="admin-login__notice">
+            <p>
+              Signed in as <strong>{user.email}</strong> (customer account).
+              Sign out to use an admin account.
+            </p>
+            <button type="button" className="admin-btn admin-btn--ghost admin-btn--full" onClick={handleSignOutOther}>
+              Sign out customer account
+            </button>
+          </div>
+        )}
         {error && <p className="admin-login__error">{error}</p>}
         <div className="form-group">
           <label htmlFor="email">Email</label>

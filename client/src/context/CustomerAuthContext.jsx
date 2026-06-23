@@ -8,6 +8,7 @@ import {
   signOut,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { isAdminEmail } from '../utils/adminAccess';
 
 const CustomerAuthContext = createContext(null);
 const googleProvider = new GoogleAuthProvider();
@@ -18,7 +19,11 @@ export function CustomerAuthProvider({ children }) {
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+      if (firebaseUser && isAdminEmail(firebaseUser.email)) {
+        setUser(null);
+      } else {
+        setUser(firebaseUser);
+      }
       setLoading(false);
     });
   }, []);

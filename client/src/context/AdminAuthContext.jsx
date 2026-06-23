@@ -1,20 +1,23 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { isAdminEmail } from '../utils/adminAccess';
 
 const AdminAuthContext = createContext(null);
 
 export function AdminAuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
+      setIsAdmin(isAdminEmail(firebaseUser?.email));
       setLoading(false);
     });
   }, []);
@@ -24,13 +27,14 @@ export function AdminAuthProvider({ children }) {
 
   const logout = () => signOut(auth);
 
-  const getToken = async () => {
-    if (!user) return null;
-    return user.getIdToken();
-  };
+  const getToken = useCallback(async () => {
+    const current = auth.currentUser;
+    if (!current || !isAdminEmail(current.email)) return null;
+    return current.getIdToken();
+  }, []);
 
   return (
-    <AdminAuthContext.Provider value={{ user, loading, login, logout, getToken }}>
+    <AdminAuthContext.Provider value={{ user, isAdmin, loading, login, logout, getToken }}>
       {children}
     </AdminAuthContext.Provider>
   );
