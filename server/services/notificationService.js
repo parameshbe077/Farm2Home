@@ -1,5 +1,10 @@
 import 'dotenv/config';
+import dns from 'node:dns';
 import nodemailer from 'nodemailer';
+
+function ipv4Lookup(hostname, options, callback) {
+  dns.lookup(hostname, { family: 4 }, callback);
+}
 
 function formatInr(amount) {
   return new Intl.NumberFormat('en-IN', {
@@ -14,8 +19,20 @@ function getAlertRecipients() {
   return raw.split(',').map((e) => e.trim()).filter(Boolean);
 }
 
+export function getOrderAlertStatus() {
+  const recipients = getAlertRecipients();
+  return {
+    configured: isSmtpConfigured() && recipients.length > 0,
+    smtpUser: process.env.SMTP_USER?.trim() || null,
+    recipientCount: recipients.length,
+    smtpHost: process.env.SMTP_HOST?.trim() || 'smtp.gmail.com',
+  };
+}
+
 function isSmtpConfigured() {
-  return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.replace(/\s/g, '');
+  return !!(user && pass);
 }
 
 function getFromAddress() {
@@ -32,19 +49,35 @@ function getFromAddress() {
 function createTransporter() {
   const user = process.env.SMTP_USER?.trim();
   const pass = process.env.SMTP_PASS?.replace(/\s/g, '');
+  const host = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
 
-  if (process.env.SMTP_HOST === 'smtp.gmail.com' || !process.env.SMTP_HOST) {
+  const base = {
+    auth: { user, pass },
+    lookup: ipv4Lookup,
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 20000,
+  };
+
+  // Gmail on Render: use STARTTLS on 587 (port 465 / IPv6 often fails on free tier)
+  if (host === 'smtp.gmail.com') {
     return nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
+      ...base,
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      tls: { minVersion: 'TLSv1.2' },
     });
   }
 
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = process.env.SMTP_SECURE === 'true';
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: { user, pass },
+    ...base,
+    host,
+    port,
+    secure,
   });
 }
 
@@ -84,12 +117,12 @@ Manage this order in your admin panel → Orders.`;
 export async function sendOrderAlert(order) {
   const recipients = getAlertRecipients();
   if (!recipients.length) {
-    console.warn('Order alert skipped: set ORDER_ALERT_EMAILS or ADMIN_EMAILS in .env');
+    console.warn('Order alert skipped: set ORDER_ALERT_EMAILS or ADMIN_EMAILS');
     return;
   }
 
   if (!isSmtpConfigured()) {
-    console.warn('Order alert skipped: set SMTP_USER and SMTP_PASS in server/.env');
+    console.warn('Order alert skipped: set SMTP_USER and SMTP_PASS');
     return;
   }
 

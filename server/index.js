@@ -11,6 +11,7 @@ import contactRouter from './routes/contact.js';
 import geocodeRouter from './routes/geocode.js';
 import customersRouter from './routes/customers.js';
 import adminRouter from './routes/admin/index.js';
+import { getOrderAlertStatus } from './services/notificationService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -32,6 +33,7 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     message: 'Farm2Home API is running',
     database: isFirebaseReady() ? 'firebase' : 'memory',
+    orderAlerts: getOrderAlertStatus(),
   });
 });
 
