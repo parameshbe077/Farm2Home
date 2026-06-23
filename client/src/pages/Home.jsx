@@ -4,10 +4,38 @@ import { fetchProducts } from '../api/api';
 import ProductGrid from '../components/ProductGrid';
 
 const heroCards = [
-  { className: 'hero__card--1', emoji: '🍎', label: 'Fruits', tint: 'fruits' },
-  { className: 'hero__card--2', emoji: '🌾', label: 'Rice', tint: 'rice' },
-  { className: 'hero__card--3', emoji: '🥬', label: 'Vegetables', tint: 'veg' },
-  { className: 'hero__card--4', emoji: '🌸', label: 'Flowers', tint: 'flowers' },
+  {
+    className: 'hero__card--1',
+    label: 'Fruits',
+    tint: 'fruits',
+    image:
+      'https://images.pexels.com/photos/1132040/pexels-photo-1132040.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop',
+    alt: 'Fresh seasonal fruits',
+  },
+  {
+    className: 'hero__card--2',
+    label: 'Rice',
+    tint: 'rice',
+    image:
+      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&h=600&fit=crop&q=80',
+    alt: 'Premium rice grains',
+  },
+  {
+    className: 'hero__card--3',
+    label: 'Vegetables',
+    tint: 'veg',
+    image:
+      'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&h=600&fit=crop&q=80',
+    alt: 'Farm-fresh vegetables',
+  },
+  {
+    className: 'hero__card--4',
+    label: 'Flowers',
+    tint: 'flowers',
+    image:
+      'https://images.pexels.com/photos/931162/pexels-photo-931162.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop',
+    alt: 'Fresh marigold flowers',
+  },
 ];
 
 export default function Home() {
@@ -83,7 +111,15 @@ export default function Home() {
             <div className="hero__grid">
               {heroCards.map((card) => (
                 <div className={`hero__card ${card.className} hero__card--${card.tint}`} key={card.label}>
-                  <span className="hero__card-emoji">{card.emoji}</span>
+                  <img
+                    className="hero__card-img"
+                    src={card.image}
+                    alt={card.alt}
+                    width={600}
+                    height={600}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <span className="hero__card-label">{card.label}</span>
                 </div>
               ))}
