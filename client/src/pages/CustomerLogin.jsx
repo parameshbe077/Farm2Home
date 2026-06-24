@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { fetchSignInMethodsForEmail } from 'firebase/auth';
 import PageBanner from '../components/PageBanner';
@@ -39,27 +39,61 @@ async function resolveAuthError(err, mode, email) {
   if (code === 'auth/popup-closed-by-user') {
     return 'Google sign-in was cancelled.';
   }
+  if (code === 'auth/unauthorized-domain') {
+    return 'This website is not authorized for Google sign-in. In Firebase Console → Authentication → Settings → Authorized domains, add farm2home-drab.vercel.app';
+  }
+  if (code === 'auth/operation-not-allowed' || code === 'auth/invalid-continue-uri') {
+    return 'Google sign-in is not enabled. In Firebase Console → Authentication → Sign-in method, enable Google.';
+  }
   if (code === 'auth/network-request-failed') {
     return 'Network error. Check your connection.';
+  }
+  if (code === 'auth/redirect-failed') {
+    return 'Google sign-in did not finish. In Google Cloud → API key, add https://farm2home-759a4.firebaseapp.com/* and http://localhost/* to HTTP referrers.';
+  }
+  if (code === 'auth/invalid-action' || code === 'auth/internal-error') {
+    return 'Google sign-in blocked. Enable Google in Firebase → Sign-in method and check API key referrers.';
   }
 
   return err?.message || 'Something went wrong. Try again.';
 }
 
 export default function CustomerLogin() {
-  const { user, loading, login, signup, loginWithGoogle } = useCustomerAuth();
+  const {
+    user,
+    loading,
+    login,
+    signup,
+    loginWithGoogle,
+    googleAuthError,
+    clearGoogleAuthError,
+    signedInAdminEmail,
+  } = useCustomerAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [googleError, setGoogleError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!googleAuthError) {
+      setGoogleError('');
+      return;
+    }
+    resolveAuthError(googleAuthError, mode, email).then(setGoogleError);
+  }, [googleAuthError, mode, email]);
 
   const redirectTo = location.state?.from || '/my-orders';
 
   if (loading) {
     return <div className="auth-loading"><p>Loading…</p></div>;
+  }
+
+  if (signedInAdminEmail) {
+    return <Navigate to="/admin" replace state={{ fromGoogle: true }} />;
   }
 
   if (user) {
@@ -86,16 +120,21 @@ export default function CustomerLogin() {
 
   const handleGoogle = async () => {
     setError('');
+    clearGoogleAuthError();
     setSubmitting(true);
     try {
-      await loginWithGoogle();
-      navigate(redirectTo, { replace: true });
+      const result = await loginWithGoogle();
+      if (result?.user) {
+        navigate(redirectTo, { replace: true });
+      }
     } catch (err) {
       setError(await resolveAuthError(err, mode, email));
     } finally {
       setSubmitting(false);
     }
   };
+
+  const displayError = error || googleError;
 
   return (
     <div className="page auth-page-wrap">
@@ -132,7 +171,7 @@ export default function CustomerLogin() {
             </button>
           </div>
 
-          {error && <p className="auth-card__error" role="alert">{error}</p>}
+          {displayError && <p className="auth-card__error" role="alert">{displayError}</p>}
 
           <button
             type="button"

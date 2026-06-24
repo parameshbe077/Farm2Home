@@ -8,6 +8,7 @@ import { AdminAuthProvider } from './context/AdminAuthContext';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
 import './index.css';
 import { initAnalytics } from './firebase/config';
+import './firebase/authBootstrap';
 
 initAnalytics();
 
