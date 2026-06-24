@@ -1,5 +1,6 @@
-/** Empty in local dev (Vite proxies /api). Set on Vercel: https://your-api.onrender.com */
+/** Local dev uses Vite proxy (/api → localhost:5000). Production uses VITE_API_URL. */
 export function getApiRoot() {
+  if (import.meta.env.DEV) return '';
   return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 }
 
