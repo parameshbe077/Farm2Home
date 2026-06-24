@@ -8,3 +8,5 @@ server/firebase-service-account.json
 *-firebase-adminsdk-*.json
 *.log
 .DS_Store
+.vercel
+.env*
