@@ -103,6 +103,20 @@ npm run build        # Build React app to client/dist
 npm start            # Serve API + built frontend on port 5000
 ```
 
+### Auto-deploy (Vercel + GitHub)
+
+Frontend: **https://farm2home-drab.vercel.app** (Vercel project: `farm2home`)
+
+1. **GitHub** → `parameshbe077/Farm2Home` → Settings → Danger Zone → **Change visibility → Public**
+2. **Vercel** → project `farm2home` → Settings → **General** → Root Directory: `client` → Save
+3. **Vercel** → Settings → **Git** → connected repo `parameshbe077/Farm2Home`, branch `main`
+4. **Vercel** → Settings → **Environment Variables** → all `VITE_*` vars in Production (copy from `client/.env.example`)
+5. Push to `main` — Vercel builds and updates production automatically
+
+Use only the **`farm2home`** project for Git deploys. The duplicate `farm2home-drab` project was for manual fixes; you can ignore or delete it later.
+
+**Note:** Hobby plan blocks Git deploys on **private** repos. Public repo + commits from your GitHub account fixes the "Deployment Blocked" error.
+
 ## Project Structure
 
 ```
