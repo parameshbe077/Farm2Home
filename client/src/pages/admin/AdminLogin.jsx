@@ -61,7 +61,7 @@ export default function AdminLogin() {
     <div className="admin-login">
       <form className="admin-login__card" onSubmit={handleSubmit}>
         <div className="admin-login__brand">
-          <span>🌾</span>
+          <img src="/logo_f2h.png" alt="Farm2Home" className="logo__img" />
           <h1>Farm2Home Admin</h1>
           <p>Sign in to manage products and orders</p>
         </div>

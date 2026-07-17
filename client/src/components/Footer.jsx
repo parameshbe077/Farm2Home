@@ -14,7 +14,7 @@ export default function Footer() {
         <div className="footer__grid">
           <div className="footer__brand">
             <div className="footer__logo">
-              <span className="logo__icon">🌾</span>
+              <img src="/logo_f2h.png" alt="Farm2Home" className="logo__img" />
               <span>Farm2Home</span>
             </div>
             <p>Premium fruits, rice, vegetables, and flowers — grown with care and delivered fresh to your doorstep.</p>

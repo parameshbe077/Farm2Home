@@ -23,7 +23,7 @@ export default function Header() {
 
       <div className="container header__inner">
         <Link to="/" className="logo" onClick={closeMenu}>
-          <span className="logo__icon">🌾</span>
+          <img src="/logo_f2h.png" alt="Farm2Home" className="logo__img" />
           <span className="logo__text">Farm2Home</span>
         </Link>
 

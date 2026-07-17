@@ -146,7 +146,7 @@ export default function CustomerLogin() {
       <div className="container auth-page">
         <div className="auth-card">
           <div className="auth-card__brand">
-            <span className="auth-card__brand-icon" aria-hidden>🌾</span>
+            <img src="/logo_f2h.png" alt="Farm2Home" className="logo__img logo__img--sm" />
             <p>Farm-fresh orders, saved to your account</p>
           </div>
 
