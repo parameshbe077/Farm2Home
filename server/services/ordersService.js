@@ -68,17 +68,23 @@ async function findExistingOrderByClientId(userId, clientOrderId) {
     )) || null;
   }
 
-  const db = getFirestore();
-  const existing = await db.collection('orders')
-    .where('clientOrderId', '==', clientOrderId)
-    .limit(1)
-    .get();
+  try {
+    const db = getFirestore();
+    const existing = await db.collection('orders')
+      .where('clientOrderId', '==', clientOrderId)
+      .limit(1)
+      .get();
 
-  if (existing.empty) return null;
-  const found = existing.docs[0];
-  const data = found.data();
-  if (data.userId !== userId) return null;
-  return { id: found.id, ...data };
+    if (existing.empty) return null;
+    const found = existing.docs[0];
+    const data = found.data();
+    if (data.userId !== userId) return null;
+    return { id: found.id, ...data };
+  } catch (err) {
+    // Missing index / transient query errors must not block new orders
+    console.warn('clientOrderId lookup skipped:', err.message);
+    return null;
+  }
 }
 
 export async function getOrdersByUserId(userId) {

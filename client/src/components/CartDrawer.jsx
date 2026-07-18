@@ -160,11 +160,36 @@ export default function CartDrawer() {
     }
 
     setCheckingOut(true);
+    const requestOrderId = pendingOrderId || createClientOrderId();
+    setPendingOrderId(requestOrderId);
+
     try {
-      const token = await getToken();
-      const requestOrderId = pendingOrderId || createClientOrderId();
-      setPendingOrderId(requestOrderId);
-      const order = await placeOrder(cart, payload, token, requestOrderId);
+      let order;
+      let lastError;
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const token = await getToken(attempt > 0);
+          if (!token) {
+            throw new Error('Please sign in to continue');
+          }
+          order = await placeOrder(cart, payload, token, requestOrderId);
+          lastError = null;
+          break;
+        } catch (err) {
+          lastError = err;
+          // Retry once for auth/network flakiness; keep same clientOrderId for idempotency
+          if (attempt === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            continue;
+          }
+        }
+      }
+
+      if (!order) {
+        throw lastError || new Error('Failed to place order');
+      }
+
       localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ ...customer, ...payload }));
       const orderNumber = order.orderNumber || order.id.slice(-6).toUpperCase();
       showToast(`Order placed! Your order #${orderNumber}`);

@@ -29,7 +29,8 @@ if (missing.length) {
 
 export const firebaseApp = initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
-setPersistence(auth, browserLocalPersistence).catch(() => {});
+/** Resolves when auth persistence is ready — await before sign-in. */
+export const authReady = setPersistence(auth, browserLocalPersistence).catch(() => {});
 export const firestore = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
 

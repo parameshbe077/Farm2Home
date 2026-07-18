@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
+import FloatingCartBar from './components/FloatingCartBar';
 import Toast from './components/Toast';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute';
@@ -64,6 +65,7 @@ export default function App() {
           </main>
           <Footer />
           <CartDrawer />
+          <FloatingCartBar />
         </>
       )}
       <Toast />

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -25,6 +26,9 @@ export function AdminAuthProvider({ children }) {
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
+  const resetPassword = (email) =>
+    sendPasswordResetEmail(auth, email.trim());
+
   const logout = () => signOut(auth);
 
   const getToken = useCallback(async () => {
@@ -34,7 +38,7 @@ export function AdminAuthProvider({ children }) {
   }, []);
 
   return (
-    <AdminAuthContext.Provider value={{ user, isAdmin, loading, login, logout, getToken }}>
+    <AdminAuthContext.Provider value={{ user, isAdmin, loading, login, resetPassword, logout, getToken }}>
       {children}
     </AdminAuthContext.Provider>
   );

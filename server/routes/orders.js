@@ -42,7 +42,9 @@ router.post('/', requireCustomer, async (req, res, next) => {
       clientOrderId,
     });
 
-    await upsertCustomerProfile(req.user.uid, {
+    // Don't block the HTTP response on profile write — slow Firestore here
+    // caused "first click fail / second click success" (order already saved).
+    upsertCustomerProfile(req.user.uid, {
       email: req.user.email || '',
       name: validated.data.name,
       phone: validated.data.phone,
