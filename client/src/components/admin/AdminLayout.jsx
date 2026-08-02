@@ -14,8 +14,8 @@ export default function AdminLayout({ children }) {
     <div className="admin">
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <img src="/logo_f2h.png" alt="Farm2Home" className="logo__img" />
-          <div>
+          <img src="/logo_f2h.png" alt="Farm2Home" className="admin-sidebar__logo" />
+          <div className="admin-sidebar__brand-text">
             <strong>Farm2Home</strong>
             <small>Admin</small>
           </div>

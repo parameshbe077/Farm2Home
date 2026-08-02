@@ -1,8 +1,7 @@
 const items = [
-  { icon: '🚚', title: 'Free Delivery', desc: 'On local orders' },
-  { icon: '🌿', title: '100% Organic', desc: 'No pesticides' },
-  { icon: '⏱️', title: 'Same-day Harvest', desc: 'Peak freshness' },
-  { icon: '✓', title: 'Quality Assured', desc: 'Farm-direct' },
+  { icon: '🚚', title: 'Free Delivery', desc: 'On orders above ₹100' },
+  { icon: '🌅', title: 'Fresh Harvest', desc: 'Every morning' },
+  { icon: '✓', title: 'Farm Direct', desc: 'Quality assured' },
 ];
 
 export default function TrustBar() {

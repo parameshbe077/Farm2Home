@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProducts } from '../api/api';
 import ProductGrid from '../components/ProductGrid';
+import TrustBar from '../components/TrustBar';
 
 const heroCards = [
   {
@@ -98,10 +99,10 @@ export default function Home() {
                 </div>
               </div>
               <div className="stat">
-                <span className="stat__icon">🚚</span>
+                <span className="stat__icon">📍</span>
                 <div>
-                  <strong>Free</strong>
-                  <span>Local delivery</span>
+                  <strong>Local</strong>
+                  <span>Doorstep delivery</span>
                 </div>
               </div>
             </div>
@@ -127,6 +128,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <TrustBar />
 
       <div className="container">
         <section className="categories">
