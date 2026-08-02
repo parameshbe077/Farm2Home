@@ -1,6 +1,5 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
-import PromoBar from './components/PromoBar';
 import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import FloatingCartBar from './components/FloatingCartBar';
@@ -52,7 +51,6 @@ function AdminRoutes() {
 export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith('/admin');
-  const showPromoBar = !isAdmin && pathname !== '/';
 
   return (
     <>
@@ -62,7 +60,6 @@ export default function App() {
       ) : (
         <>
           <Header />
-          {showPromoBar && <PromoBar />}
           <main>
             <StoreRoutes />
           </main>

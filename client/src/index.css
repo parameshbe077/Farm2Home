@@ -62,27 +62,6 @@ main { flex: 1; }
   padding: 0 1.5rem;
 }
 
-/* ─── Promo bar ─── */
-.promo-bar {
-  background: var(--green-800);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.8rem;
-  font-weight: 500;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.promo-bar__inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 0.45rem 1.25rem;
-  flex-wrap: wrap;
-  text-align: center;
-}
-
-.promo-bar__divider { opacity: 0.45; }
-
 /* ─── Header ─── */
 .header {
   position: sticky;
@@ -2464,7 +2443,6 @@ body:has(.floating-cart) .toast.show {
   .contact__cards { grid-template-columns: 1fr; }
   .footer__grid { grid-template-columns: 1fr; }
   .footer__bottom { flex-direction: column; text-align: center; }
-  .promo-bar__inner { font-size: 0.72rem; padding: 0.4rem 1rem; }
 }
 
 @media (max-width: 480px) {
