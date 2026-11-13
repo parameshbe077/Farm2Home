@@ -11,6 +11,7 @@ import contactRouter from './routes/contact.js';
 import geocodeRouter from './routes/geocode.js';
 import customersRouter from './routes/customers.js';
 import adminRouter from './routes/admin/index.js';
+import deliveryRouter from './routes/delivery.js';
 import { getOrderAlertStatus } from './services/notificationService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -43,6 +44,7 @@ app.use('/api/customers', customersRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/geocode', geocodeRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/delivery', deliveryRouter);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

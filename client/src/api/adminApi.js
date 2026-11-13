@@ -70,6 +70,28 @@ export function fetchAdminContactMessages(token) {
   return adminRequest('/contact-messages', token);
 }
 
+export function fetchAdminRiders(token) {
+  return adminRequest('/riders', token);
+}
+
+export function createAdminRider(token, rider) {
+  return adminRequest('/riders', token, {
+    method: 'POST',
+    body: JSON.stringify(rider),
+  });
+}
+
+export function setAdminRiderPassword(token, id, password) {
+  return adminRequest(`/riders/${id}/password`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ password }),
+  });
+}
+
+export function deleteAdminRider(token, id) {
+  return adminRequest(`/riders/${id}`, token, { method: 'DELETE' });
+}
+
 export function updateOrderStatus(token, id, status) {
   return adminRequest(`/orders/${id}/status`, token, {
     method: 'PATCH',

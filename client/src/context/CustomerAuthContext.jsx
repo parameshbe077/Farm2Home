@@ -38,10 +38,10 @@ export function CustomerAuthProvider({ children }) {
     if (firebaseUser && isAdminEmail(firebaseUser.email)) {
       setUser(null);
       setSignedInAdminEmail(firebaseUser.email);
-    } else {
-      setUser(firebaseUser);
-      setSignedInAdminEmail(null);
+      return;
     }
+    setUser(firebaseUser);
+    setSignedInAdminEmail(null);
   }, []);
 
   applyRef.current = applyFirebaseUser;

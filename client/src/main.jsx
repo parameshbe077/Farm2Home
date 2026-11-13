@@ -5,6 +5,7 @@ import App from './App';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
+import { DeliveryAuthProvider } from './context/DeliveryAuthContext';
 import { CustomerAuthProvider } from './context/CustomerAuthContext';
 import './index.css';
 import { initAnalytics } from './firebase/config';
@@ -16,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <AdminAuthProvider>
+        <DeliveryAuthProvider>
         <CustomerAuthProvider>
           <ToastProvider>
             <CartProvider>
@@ -23,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             </CartProvider>
           </ToastProvider>
         </CustomerAuthProvider>
+        </DeliveryAuthProvider>
       </AdminAuthProvider>
     </BrowserRouter>
   </React.StrictMode>

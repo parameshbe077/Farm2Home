@@ -26,6 +26,7 @@ export default function Footer() {
             <Link to="/contact">Contact</Link>
             <Link to="/track-order">Track Order</Link>
             <Link to="/privacy">Privacy</Link>
+            <Link to="/delivery">Delivery</Link>
           </div>
           <div className="footer__col">
             <h4>Contact</h4>

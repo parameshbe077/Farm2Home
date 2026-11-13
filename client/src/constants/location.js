@@ -1,6 +1,6 @@
 export const FARM_LOCATION = {
-  lat: Number(import.meta.env.VITE_FARM_LAT) || 9.9252,
-  lng: Number(import.meta.env.VITE_FARM_LNG) || 78.1198,
+  lat: Number(import.meta.env.VITE_FARM_LAT) || 16.7458,
+  lng: Number(import.meta.env.VITE_FARM_LNG) || 77.4958,
   name: import.meta.env.VITE_FARM_NAME || 'Farm2Home',
 };
 

@@ -180,6 +180,10 @@ export default function AdminDashboard() {
           <strong>Contact Messages</strong>
           <span>Read customer enquiries</span>
         </Link>
+        <Link to="/admin/riders" className="admin-quick-link">
+          <strong>Delivery riders</strong>
+          <span>Add a rider login</span>
+        </Link>
       </div>
     </div>
   );

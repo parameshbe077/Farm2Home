@@ -20,6 +20,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminMessages from './pages/admin/AdminMessages';
+import AdminRiders from './pages/admin/AdminRiders';
+import DeliveryLogin from './pages/delivery/DeliveryLogin';
+import DeliveryOrders from './pages/delivery/DeliveryOrders';
 import './admin.css';
 
 function StoreRoutes() {
@@ -38,6 +41,15 @@ function StoreRoutes() {
   );
 }
 
+function DeliveryRoutes() {
+  return (
+    <Routes>
+      <Route path="/delivery/login" element={<DeliveryLogin />} />
+      <Route path="/delivery" element={<DeliveryOrders />} />
+    </Routes>
+  );
+}
+
 function AdminRoutes() {
   return (
     <Routes>
@@ -47,6 +59,7 @@ function AdminRoutes() {
         <Route path="products" element={<AdminProducts />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="messages" element={<AdminMessages />} />
+        <Route path="riders" element={<AdminRiders />} />
       </Route>
     </Routes>
   );
@@ -55,12 +68,15 @@ function AdminRoutes() {
 export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith('/admin');
+  const isDelivery = pathname.startsWith('/delivery');
 
   return (
     <>
       <ScrollToTop />
       {isAdmin ? (
         <AdminRoutes />
+      ) : isDelivery ? (
+        <DeliveryRoutes />
       ) : (
         <>
           <Header />

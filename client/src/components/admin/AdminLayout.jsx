@@ -25,6 +25,7 @@ export default function AdminLayout({ children }) {
           <NavLink to="/admin/products" className="admin-nav__link">Products</NavLink>
           <NavLink to="/admin/orders" className="admin-nav__link">Orders</NavLink>
           <NavLink to="/admin/messages" className="admin-nav__link">Messages</NavLink>
+          <NavLink to="/admin/riders" className="admin-nav__link">Riders</NavLink>
         </nav>
         <div className="admin-sidebar__footer">
           <p className="admin-sidebar__email">{user?.email}</p>
