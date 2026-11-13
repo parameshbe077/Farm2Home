@@ -966,7 +966,8 @@
   text-decoration: underline;
 }
 
-.admin-order-card__address {
+.admin-order-card__address,
+.admin-order-card__note {
   font-size: 0.88rem;
   color: var(--gray-700);
   line-height: 1.45;

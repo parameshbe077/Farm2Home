@@ -1,9 +1,11 @@
+import { useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function FloatingCartBar() {
   const { cartCount, isOpen, openCart } = useCart();
+  const { pathname } = useLocation();
 
-  if (cartCount <= 0 || isOpen) return null;
+  if (cartCount <= 0 || isOpen || pathname === '/checkout' || pathname === '/login') return null;
 
   const itemLabel = cartCount === 1 ? '1 item' : `${cartCount} items`;
 

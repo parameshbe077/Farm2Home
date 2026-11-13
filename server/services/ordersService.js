@@ -116,7 +116,17 @@ export async function getOrders() {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-export async function createOrder({ items, customer, userId, userEmail, clientOrderId }) {
+function normalizeNote(note) {
+  const text = String(note || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  if (text.length > 200) {
+    throw new Error('Delivery note must be 200 characters or less');
+  }
+  return text;
+}
+
+export async function createOrder({ items, customer, userId, userEmail, clientOrderId, note }) {
+  const safeNote = normalizeNote(note);
   const safeClientOrderId = normalizeClientOrderId(clientOrderId);
   const existingOrder = await findExistingOrderByClientId(userId, safeClientOrderId);
   if (existingOrder) {
@@ -146,6 +156,7 @@ export async function createOrder({ items, customer, userId, userEmail, clientOr
     ...(safeClientOrderId && { clientOrderId: safeClientOrderId }),
     status: 'pending',
     paymentMethod: 'cod',
+    ...(safeNote && { note: safeNote }),
     createdAt: new Date().toISOString(),
   };
 
@@ -234,6 +245,77 @@ export async function updateOrderStatus(id, status) {
   return { id: doc.id, ...doc.data(), status, updatedAt };
 }
 
+export async function cancelOrderForCustomer(orderId, userId) {
+  if (!orderId || !userId) return { error: 'not_found' };
+
+  if (!isFirebaseReady()) {
+    const order = memoryOrders.find((entry) => entry.id === orderId);
+    if (!order) return { error: 'not_found' };
+    if (order.userId !== userId) return { error: 'forbidden' };
+    if (order.status === 'cancelled') {
+      return { order: toPublicOrder(order, { includePhone: true }) };
+    }
+    if (order.status !== 'pending') return { error: 'not_pending' };
+
+    for (const item of order.items || []) {
+      const product = await getProductById(item.id);
+      if (!product) continue;
+      await updateProduct(item.id, { stock: product.stock + Number(item.qty || 0) });
+    }
+
+    order.status = 'cancelled';
+    order.updatedAt = new Date().toISOString();
+    order.cancelledBy = 'customer';
+    return { order: toPublicOrder(order, { includePhone: true }) };
+  }
+
+  const db = getFirestore();
+  const result = await db.runTransaction(async (transaction) => {
+    const orderRef = db.collection('orders').doc(String(orderId));
+    const orderDoc = await transaction.get(orderRef);
+    if (!orderDoc.exists) return { error: 'not_found' };
+
+    const data = orderDoc.data();
+    if (data.userId !== userId) return { error: 'forbidden' };
+    if (data.status === 'cancelled') {
+      return { order: { id: orderDoc.id, ...data, status: 'cancelled' } };
+    }
+    if (data.status !== 'pending') return { error: 'not_pending' };
+
+    const items = Array.isArray(data.items) ? data.items : [];
+    const productRefs = items.map((item) => db.collection('products').doc(String(item.id)));
+    const productDocs = await Promise.all(productRefs.map((ref) => transaction.get(ref)));
+
+    productDocs.forEach((doc, index) => {
+      if (!doc.exists) return;
+      const qty = Number(items[index].qty) || 0;
+      const current = typeof doc.data().stock === 'number' ? Math.max(0, Math.floor(doc.data().stock)) : 0;
+      const stock = current + qty;
+      transaction.update(productRefs[index], { stock, inStock: stock > 0 });
+    });
+
+    const updatedAt = new Date().toISOString();
+    transaction.update(orderRef, {
+      status: 'cancelled',
+      updatedAt,
+      cancelledBy: 'customer',
+    });
+
+    return {
+      order: {
+        id: orderDoc.id,
+        ...data,
+        status: 'cancelled',
+        updatedAt,
+        cancelledBy: 'customer',
+      },
+    };
+  });
+
+  if (result.error) return result;
+  return { order: toPublicOrder(result.order, { includePhone: true }) };
+}
+
 export { ORDER_STATUSES };
 
 function normalizePhone(phone) {
@@ -273,6 +355,7 @@ function toPublicOrder(order, { includePhone = false } = {}) {
     createdAt: toIsoDate(order.createdAt),
     updatedAt: toIsoDate(order.updatedAt),
     paymentMethod: order.paymentMethod || 'cod',
+    note: order.note || '',
     customer,
   };
 }

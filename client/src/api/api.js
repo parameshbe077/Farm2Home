@@ -64,10 +64,10 @@ export function fetchProduct(id) {
   return request(`/products/${id}`);
 }
 
-export function placeOrder(items, customer, token, clientOrderId) {
+export function placeOrder(items, customer, token, clientOrderId, note) {
   return authRequest('/orders', token, {
     method: 'POST',
-    body: JSON.stringify({ items, customer, clientOrderId }),
+    body: JSON.stringify({ items, customer, clientOrderId, note }),
   });
 }
 
@@ -77,6 +77,12 @@ export function fetchMyProfile(token) {
 
 export function fetchMyOrders(token) {
   return authRequest('/customers/me/orders', token);
+}
+
+export function cancelMyOrder(token, orderId) {
+  return authRequest(`/customers/me/orders/${orderId}/cancel`, token, {
+    method: 'POST',
+  });
 }
 
 export function updateMyProfile(token, profile) {

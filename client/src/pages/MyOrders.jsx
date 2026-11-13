@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import PageBanner from '../components/PageBanner';
 import ProductImage from '../components/ProductImage';
 import ProtectedCustomerRoute from '../components/ProtectedCustomerRoute';
-import { fetchMyOrders } from '../api/api';
+import { cancelMyOrder, fetchMyOrders } from '../api/api';
+import { useToast } from '../context/ToastContext';
 import { useCustomerAuth } from '../context/CustomerAuthContext';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -24,10 +25,12 @@ function formatDate(iso) {
 
 function MyOrdersContent() {
   const { getToken, user } = useCustomerAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,6 +61,22 @@ function MyOrdersContent() {
     loadOrders();
     return () => { cancelled = true; };
   }, [getToken, user?.uid, reloadKey]);
+
+  const handleCancel = async (order) => {
+    const confirmed = window.confirm(`Cancel order #${order.orderNumber}? This only works while the order is still pending.`);
+    if (!confirmed) return;
+    setCancellingId(order.id);
+    try {
+      const token = await getToken();
+      const updated = await cancelMyOrder(token, order.id);
+      setOrders((current) => current.map((entry) => (entry.id === order.id ? { ...entry, ...updated } : entry)));
+      showToast(`Order #${order.orderNumber} cancelled`);
+    } catch (err) {
+      showToast(err.message || 'Could not cancel this order');
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   return (
     <div className="page">
@@ -136,12 +155,25 @@ function MyOrdersContent() {
                     📍 {[order.customer.address, order.customer.area, order.customer.pincode].filter(Boolean).join(', ')}
                   </p>
                 )}
-                <Link
-                  to={`/track-order?order=${order.orderNumber}&phone=${encodeURIComponent(order.customer?.phone || '')}`}
-                  className="btn btn--outline btn--sm"
-                >
-                  Track this order
-                </Link>
+                {order.note && <p className="my-order-card__note">Note: {order.note}</p>}
+                <div className="my-order-card__actions">
+                  <Link
+                    to={`/track-order?order=${order.orderNumber}&phone=${encodeURIComponent(order.customer?.phone || '')}`}
+                    className="btn btn--outline btn--sm"
+                  >
+                    Track this order
+                  </Link>
+                  {order.status === 'pending' && (
+                    <button
+                      type="button"
+                      className="btn btn--outline btn--sm"
+                      onClick={() => handleCancel(order)}
+                      disabled={cancellingId === order.id}
+                    >
+                      {cancellingId === order.id ? 'Cancelling…' : 'Cancel order'}
+                    </button>
+                  )}
+                </div>
               </article>
             ))}
           </div>

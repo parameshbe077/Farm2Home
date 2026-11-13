@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireCustomer } from '../middleware/customerAuth.js';
 import { getCustomerProfile, upsertCustomerProfile } from '../services/customersService.js';
-import { getOrdersByUserId } from '../services/ordersService.js';
+import { cancelOrderForCustomer, getOrdersByUserId } from '../services/ordersService.js';
 
 const router = Router();
 
@@ -42,6 +42,26 @@ router.get('/me/orders', async (req, res, next) => {
   try {
     const orders = await getOrdersByUserId(req.user.uid);
     res.json(orders);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/me/orders/:id/cancel', async (req, res, next) => {
+  try {
+    const result = await cancelOrderForCustomer(req.params.id, req.user.uid);
+    if (result.error === 'not_found') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (result.error === 'forbidden') {
+      return res.status(403).json({ error: 'This order belongs to another account' });
+    }
+    if (result.error === 'not_pending') {
+      return res.status(400).json({
+        error: 'Only pending orders can be cancelled. Call us if the farm has already confirmed it.',
+      });
+    }
+    res.json(result.order);
   } catch (err) {
     next(err);
   }

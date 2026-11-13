@@ -115,7 +115,7 @@ Customer
 Delivery address
   ${c.address || '—'}
   ${c.area || '—'} — ${c.pincode || '—'}
-
+${order.note ? `\nNote: ${order.note}\n` : ''}
 Items
 ${itemsList}
 

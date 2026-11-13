@@ -85,13 +85,6 @@ export default function Home() {
             </div>
             <div className="hero__stats">
               <div className="stat">
-                <span className="stat__icon">🌿</span>
-                <div>
-                  <strong>100%</strong>
-                  <span>Organic</span>
-                </div>
-              </div>
-              <div className="stat">
                 <span className="stat__icon">☀️</span>
                 <div>
                   <strong>Same-day</strong>

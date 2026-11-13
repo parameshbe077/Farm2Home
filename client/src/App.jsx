@@ -13,6 +13,8 @@ import Contact from './pages/Contact';
 import TrackOrder from './pages/TrackOrder';
 import CustomerLogin from './pages/CustomerLogin';
 import MyOrders from './pages/MyOrders';
+import Checkout from './pages/Checkout';
+import Privacy from './pages/Privacy';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
@@ -30,6 +32,8 @@ function StoreRoutes() {
       <Route path="/track-order" element={<TrackOrder />} />
       <Route path="/login" element={<CustomerLogin />} />
       <Route path="/my-orders" element={<MyOrders />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );
 }

@@ -40,6 +40,7 @@ router.post('/', requireCustomer, async (req, res, next) => {
       userId: req.user.uid,
       userEmail: req.user.email || validated.data.email,
       clientOrderId,
+      note: req.body?.note,
     });
 
     // Don't block the HTTP response on profile write — slow Firestore here
@@ -59,7 +60,11 @@ router.post('/', requireCustomer, async (req, res, next) => {
 
     res.status(201).json(order);
   } catch (err) {
-    if (err.message === 'One or more products are invalid' || err.message === 'One or more products are out of stock or invalid') {
+    if (
+      err.message === 'One or more products are invalid'
+      || err.message === 'One or more products are out of stock or invalid'
+      || err.message === 'Delivery note must be 200 characters or less'
+    ) {
       return res.status(400).json({ error: err.message });
     }
     next(err);

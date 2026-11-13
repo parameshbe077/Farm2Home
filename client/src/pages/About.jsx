@@ -42,7 +42,7 @@ export default function About() {
           <div className="about__visual">
             <div className="about__image">
               <span>🌻</span>
-              <p>Est. 2010 · Green Valley Farm</p>
+              <p>Est. 2010 · Green Valley Farm, Narayanpet District</p>
             </div>
           </div>
         </div>

@@ -130,6 +130,7 @@ export default function AdminOrders() {
                   📍 {[order.customer.address, order.customer.area, order.customer.pincode].filter(Boolean).join(', ')}
                 </p>
               )}
+              {order.note && <p className="admin-order-card__note">Note: {order.note}</p>}
               <DeliveryTrackingMap customer={order.customer} status={order.status} height={180} />
               <ul className="admin-order-card__items">
                 {order.items?.map((item) => (

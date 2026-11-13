@@ -25,17 +25,18 @@ export default function Footer() {
             <Link to="/about">About Us</Link>
             <Link to="/contact">Contact</Link>
             <Link to="/track-order">Track Order</Link>
+            <Link to="/privacy">Privacy</Link>
           </div>
           <div className="footer__col">
             <h4>Contact</h4>
-            <span>Green Valley Farm</span>
+            <span>Green Valley Farm, Narayanpet District</span>
             <a href="tel:+919963785421">+91 9963785421</a>
             <a href="mailto:farm2homesouth@gmail.com">farm2homesouth@gmail.com</a>
           </div>
         </div>
         <div className="footer__bottom">
           <p>&copy; 2026 Farm2Home. All rights reserved.</p>
-          <p>Farm-fresh · Organic · Delivered daily</p>
+          <p>Farm-fresh · Delivered daily</p>
         </div>
       </div>
     </footer>

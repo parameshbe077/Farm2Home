@@ -36,9 +36,11 @@ function normalizeProduct(product) {
   const imageUrl = typeof product.imageUrl === 'string' && product.imageUrl.trim()
     ? product.imageUrl.trim()
     : null;
+  const rest = { ...product };
+  delete rest.description;
 
   return {
-    ...product,
+    ...rest,
     stock,
     inStock: stock > 0,
     imageUrl,

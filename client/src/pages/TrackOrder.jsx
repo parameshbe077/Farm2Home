@@ -238,6 +238,8 @@ export default function TrackOrder() {
                 </p>
               )}
 
+              {order.note && <p className="track-order__note">Note: {order.note}</p>}
+
               <DeliveryTrackingMap customer={order.customer} status={order.status} />
 
               <Link to="/products" className="btn btn--outline btn--full">Order again</Link>

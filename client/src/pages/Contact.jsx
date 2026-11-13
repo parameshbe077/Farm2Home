@@ -4,7 +4,7 @@ import { sendContact } from '../api/api';
 import { useToast } from '../context/ToastContext';
 
 const contactInfo = [
-  { label: 'Address', value: 'Green Valley Farm, Rural District' },
+  { label: 'Address', value: 'Green Valley Farm, Narayanpet District' },
   { label: 'Phone', value: '+91 9963785421' },
   { label: 'Email', value: 'farm2homesouth@gmail.com' },
   { label: 'Hours', value: 'Mon–Sat, 6 AM – 6 PM' },
